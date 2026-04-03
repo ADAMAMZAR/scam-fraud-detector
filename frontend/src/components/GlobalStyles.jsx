@@ -306,6 +306,7 @@ export function GlobalStyles() {
         .stats-grid { grid-template-columns: repeat(2,1fr); }
         .grid-2, .grid-3 { grid-template-columns: 1fr; }
       }
+        
     `}</style>
   );
 }
