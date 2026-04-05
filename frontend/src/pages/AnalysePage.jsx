@@ -21,115 +21,296 @@ const EXAMPLES = [
   },
 ];
 
-const RISK_COLORS = {
-  Safe: { bg: "#EAF3DE", color: "#27500A", border: "#639922" },
-  Suspicious: { bg: "#FAEEDA", color: "#633806", border: "#BA7517" },
-  Fraud: { bg: "#FCEBEB", color: "#A32D2D", border: "#E24B4A" },
+// ── Fully explicit colors — no CSS variables inside result card ──────────────
+const RISK = {
+  Safe: {
+    bg:         "#F0FDF4",
+    bannerText: "#14532D",
+    scoreColor: "#16A34A",
+    barColor:   "#22C55E",
+    border:     "#86EFAC",
+    badgeBg:    "#DCFCE7",
+    badgeText:  "#166534",
+    reasonBg:   "#F0FDF4",
+    reasonBorder:"#BBF7D0",
+    shapeBar:   "#22C55E",
+    label:      "Safe",
+    emoji:      "✅",
+  },
+  Suspicious: {
+    bg:         "#FFFBEB",
+    bannerText: "#78350F",
+    scoreColor: "#D97706",
+    barColor:   "#F59E0B",
+    border:     "#FCD34D",
+    badgeBg:    "#FEF3C7",
+    badgeText:  "#92400E",
+    reasonBg:   "#FFFBEB",
+    reasonBorder:"#FDE68A",
+    shapeBar:   "#F59E0B",
+    label:      "Suspicious",
+    emoji:      "⚠️",
+  },
+  Fraud: {
+    bg:         "#FFF1F2",
+    bannerText: "#881337",
+    scoreColor: "#DC2626",
+    barColor:   "#EF4444",
+    border:     "#FCA5A5",
+    badgeBg:    "#FFE4E6",
+    badgeText:  "#9F1239",
+    reasonBg:   "#FFF1F2",
+    reasonBorder:"#FECDD3",
+    shapeBar:   "#EF4444",
+    label:      "Fraud",
+    emoji:      "🚨",
+  },
 };
 
-function getRiskLabel(score) {
+function getRiskKey(score) {
   if (score >= 75) return "Fraud";
   if (score >= 40) return "Suspicious";
   return "Safe";
 }
 
-function getRiskEmoji(label) {
-  if (label === "Fraud") return "🚨";
-  if (label === "Suspicious") return "⚠️";
-  return "✅";
-}
-
+// ── Gauge bar ─────────────────────────────────────────────────────────────────
 function GaugeBar({ score }) {
-  const label = getRiskLabel(score);
-  const colors = RISK_COLORS[label];
+  const key = getRiskKey(score);
+  const r   = RISK[key];
+
   return (
-    <div style={{ marginBottom: "16px" }}>
+    <div style={{ marginBottom: "20px" }}>
+
+      {/* Label + big number */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "6px",
+          alignItems: "flex-end",
+          marginBottom: "10px",
         }}
       >
-        <span
-          style={{
-            fontSize: "12px",
-            fontWeight: "600",
-            color: "var(--text3)",
-          }}
-        >
-          RISK SCORE
-        </span>
-        <span
-          style={{
-            fontSize: "28px",
-            fontWeight: "700",
-            color: colors.border,
-          }}
-        >
-          {score}
-          <span
-            style={{ fontSize: "14px", fontWeight: "400", color: "var(--text3)" }}
+        <div>
+          <div
+            style={{
+              fontSize: "11px",
+              fontWeight: "700",
+              letterSpacing: "0.06em",
+              color: "#6B7280",
+              marginBottom: "2px",
+            }}
           >
-            /100
+            RISK SCORE
+          </div>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "4px 12px",
+              borderRadius: "20px",
+              background: r.badgeBg,
+              border: `1px solid ${r.border}`,
+            }}
+          >
+            <span style={{ fontSize: "13px" }}>{r.emoji}</span>
+            <span
+              style={{
+                fontSize: "13px",
+                fontWeight: "700",
+                color: r.badgeText,
+              }}
+            >
+              {r.label}
+            </span>
+          </div>
+        </div>
+
+        {/* Score number — large, always readable */}
+        <div style={{ textAlign: "right" }}>
+          <span
+            style={{
+              fontSize: "48px",
+              fontWeight: "800",
+              color: r.scoreColor,
+              lineHeight: 1,
+            }}
+          >
+            {score}
           </span>
-        </span>
+          <span
+            style={{
+              fontSize: "18px",
+              fontWeight: "400",
+              color: "#9CA3AF",
+              marginLeft: "2px",
+            }}
+          >
+            / 100
+          </span>
+        </div>
       </div>
+
+      {/* Progress bar */}
       <div
         style={{
           width: "100%",
-          height: "10px",
-          borderRadius: "5px",
-          background: "var(--bg3, #f0f0f0)",
+          height: "12px",
+          borderRadius: "6px",
+          background: "#F3F4F6",
           overflow: "hidden",
+          border: "1px solid #E5E7EB",
         }}
       >
         <div
           style={{
             height: "100%",
             width: `${score}%`,
-            borderRadius: "5px",
-            background: colors.border,
-            transition: "width 0.8s ease",
+            borderRadius: "6px",
+            background: r.barColor,
+            transition: "width 1s cubic-bezier(0.4,0,0.2,1)",
           }}
         />
       </div>
+
+      {/* Zone markers */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
-          marginTop: "4px",
+          marginTop: "6px",
         }}
       >
-        <span style={{ fontSize: "10px", color: "var(--text3)" }}>0 Safe</span>
-        <span style={{ fontSize: "10px", color: "var(--text3)" }}>
-          40 Suspicious
-        </span>
-        <span style={{ fontSize: "10px", color: "var(--text3)" }}>
-          75 Fraud
-        </span>
+        {[
+          { label: "Safe",       range: "0",  color: "#16A34A" },
+          { label: "Suspicious", range: "40", color: "#D97706" },
+          { label: "Fraud",      range: "75", color: "#DC2626" },
+          { label: "",           range: "100",color: "#6B7280" },
+        ].map((m, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: "3px" }}>
+            <div
+              style={{
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                background: m.color,
+              }}
+            />
+            <span style={{ fontSize: "10px", color: "#6B7280", fontWeight: "500" }}>
+              {m.range}{m.label ? ` ${m.label}` : ""}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
+// ── Reason row ────────────────────────────────────────────────────────────────
+function ReasonRow({ reason, colors, maxPoints = 40 }) {
+  const pct = Math.min((reason.points / maxPoints) * 100, 100);
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        padding: "11px 14px",
+        borderRadius: "10px",
+        background: colors.reasonBg,
+        border: `1px solid ${colors.reasonBorder}`,
+      }}
+    >
+      {/* Text */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: "13px",
+            fontWeight: "600",
+            color: "#111827",
+            marginBottom: "3px",
+          }}
+        >
+          {reason.text}
+        </div>
+        <div
+          style={{
+            fontSize: "11px",
+            color: "#6B7280",
+            fontWeight: "500",
+          }}
+        >
+          {reason.category}
+        </div>
+      </div>
+
+      {/* SHAP mini bar + points */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          gap: "4px",
+          flexShrink: 0,
+        }}
+      >
+        <span
+          style={{
+            fontSize: "13px",
+            fontWeight: "700",
+            color: colors.scoreColor,
+          }}
+        >
+          +{reason.points} pts
+        </span>
+        <div
+          style={{
+            width: "72px",
+            height: "6px",
+            borderRadius: "3px",
+            background: "#E5E7EB",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              height: "100%",
+              width: `${pct}%`,
+              borderRadius: "3px",
+              background: colors.shapeBar,
+              transition: "width 0.8s ease",
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Result card ───────────────────────────────────────────────────────────────
 function ResultCard({ result }) {
-  const label = getRiskLabel(result.score);
-  const colors = RISK_COLORS[label];
-  const emoji = getRiskEmoji(label);
+  const key    = getRiskKey(result.score);
+  const colors = RISK[key];
   const [copied, setCopied] = useState(false);
 
   function copyReport() {
     const text = [
-      `Scam Detection Report`,
-      `Score: ${result.score}/100`,
-      `Label: ${label}`,
-      `Confidence: ${result.confidence}%`,
-      ``,
-      `Reasons:`,
-      ...result.reasons.map((r) => `• ${r.text} (+${r.points} pts)`),
+      "═══════════════════════════",
+      "  SCAM DETECTION REPORT",
+      "═══════════════════════════",
+      `Score      : ${result.score} / 100`,
+      `Label      : ${colors.label}`,
+      `Confidence : ${result.confidence}%`,
+      "",
+      "── Why flagged ──",
+      ...result.reasons.map((r) => `• ${r.text}  (+${r.points} pts)`),
+      "",
+      "── Score breakdown ──",
+      ...Object.entries(result.breakdown).map(
+        ([k, v]) => `• ${k}: ${v} pts`
+      ),
     ].join("\n");
+
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -140,187 +321,150 @@ function ResultCard({ result }) {
     <div
       style={{
         marginTop: "24px",
-        border: `1.5px solid ${colors.border}`,
-        borderRadius: "12px",
+        borderRadius: "14px",
         overflow: "hidden",
-        animation: "fadeIn 0.3s ease",
+        border: `2px solid ${colors.border}`,
+        background: "#FFFFFF",
+        boxShadow: `0 4px 24px ${colors.barColor}22`,
+        animation: "resultIn 0.35s cubic-bezier(0.4,0,0.2,1)",
       }}
     >
       <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes shimmer { 0%,100%{opacity:1} 50%{opacity:0.6} }
+        @keyframes resultIn {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0);    }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
-      {/* Header banner */}
+      {/* ── Banner ── */}
       <div
         style={{
           background: colors.bg,
-          padding: "14px 18px",
+          padding: "16px 20px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          borderBottom: `1px solid ${colors.border}22`,
+          borderBottom: `1.5px solid ${colors.border}`,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ fontSize: "22px" }}>{emoji}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <span style={{ fontSize: "28px", lineHeight: 1 }}>{colors.emoji}</span>
           <div>
             <div
               style={{
-                fontSize: "16px",
-                fontWeight: "700",
-                color: colors.color,
+                fontSize: "18px",
+                fontWeight: "800",
+                color: colors.bannerText,
+                letterSpacing: "-0.02em",
               }}
             >
-              {label.toUpperCase()} DETECTED
+              {colors.label.toUpperCase()} DETECTED
             </div>
-            <div style={{ fontSize: "11px", color: colors.color, opacity: 0.8 }}>
-              {result.confidence}% confidence
+            <div
+              style={{
+                fontSize: "12px",
+                color: colors.bannerText,
+                opacity: 0.7,
+                fontWeight: "500",
+                marginTop: "2px",
+              }}
+            >
+              {result.confidence}% model confidence
             </div>
           </div>
         </div>
+
         <button
           onClick={copyReport}
           style={{
-            fontSize: "11px",
-            padding: "5px 12px",
+            fontSize: "12px",
+            padding: "7px 14px",
             borderRadius: "8px",
-            border: `1px solid ${colors.border}`,
-            background: "transparent",
-            color: colors.color,
+            border: `1.5px solid ${colors.border}`,
+            background: copied ? colors.badgeBg : "transparent",
+            color: colors.bannerText,
             cursor: "pointer",
-            fontWeight: "500",
+            fontWeight: "600",
+            transition: "all 0.15s",
           }}
         >
-          {copied ? "Copied ✓" : "Copy Report"}
+          {copied ? "✓ Copied!" : "📋 Copy Report"}
         </button>
       </div>
 
-      {/* Score gauge */}
-      <div style={{ padding: "18px 18px 0" }}>
+      {/* ── Score gauge ── */}
+      <div style={{ padding: "20px 20px 0" }}>
         <GaugeBar score={result.score} />
       </div>
 
-      {/* SHAP Reasons */}
-      <div style={{ padding: "0 18px 18px" }}>
+      {/* ── Why flagged ── */}
+      <div style={{ padding: "0 20px 20px" }}>
         <div
           style={{
-            fontSize: "12px",
-            fontWeight: "600",
-            color: "var(--text3)",
+            fontSize: "11px",
+            fontWeight: "700",
+            letterSpacing: "0.06em",
+            color: "#6B7280",
             marginBottom: "10px",
           }}
         >
           WHY THIS WAS FLAGGED
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          {result.reasons.map((reason, i) => (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "10px 12px",
-                borderRadius: "8px",
-                background: "var(--bg2, #f8f8f8)",
-                border: "0.5px solid var(--border, #e0e0e0)",
-              }}
-            >
-              <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: "500",
-                    color: "var(--text1)",
-                    marginBottom: "2px",
-                  }}
-                >
-                  {reason.text}
-                </div>
-                <div style={{ fontSize: "10px", color: "var(--text3)" }}>
-                  {reason.category}
-                </div>
-              </div>
-              {/* SHAP bar */}
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <div
-                  style={{
-                    width: "60px",
-                    height: "6px",
-                    borderRadius: "3px",
-                    background: "var(--bg3, #e8e8e8)",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      height: "100%",
-                      width: `${(reason.points / 40) * 100}%`,
-                      background: colors.border,
-                      borderRadius: "3px",
-                    }}
-                  />
-                </div>
-                <span
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    color: colors.border,
-                    minWidth: "36px",
-                    textAlign: "right",
-                  }}
-                >
-                  +{reason.points}pts
-                </span>
-              </div>
-            </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {result.reasons.map((r, i) => (
+            <ReasonRow key={i} reason={r} colors={colors} />
           ))}
         </div>
 
-        {/* Channel breakdown */}
+        {/* ── Score breakdown ── */}
         {result.breakdown && (
-          <div style={{ marginTop: "14px" }}>
+          <div style={{ marginTop: "16px" }}>
             <div
               style={{
-                fontSize: "12px",
-                fontWeight: "600",
-                color: "var(--text3)",
-                marginBottom: "8px",
+                fontSize: "11px",
+                fontWeight: "700",
+                letterSpacing: "0.06em",
+                color: "#6B7280",
+                marginBottom: "10px",
               }}
             >
               SCORE BREAKDOWN
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
-              {Object.entries(result.breakdown).map(([key, val]) => (
+              {Object.entries(result.breakdown).map(([k, v]) => (
                 <div
-                  key={key}
+                  key={k}
                   style={{
                     flex: 1,
-                    padding: "8px 10px",
-                    borderRadius: "8px",
-                    background: "var(--bg2, #f8f8f8)",
-                    border: "0.5px solid var(--border)",
+                    padding: "12px 10px",
+                    borderRadius: "10px",
+                    background: v > 20 ? colors.badgeBg : "#F9FAFB",
+                    border: `1px solid ${v > 20 ? colors.border : "#E5E7EB"}`,
                     textAlign: "center",
                   }}
                 >
                   <div
                     style={{
-                      fontSize: "16px",
-                      fontWeight: "700",
-                      color: "var(--text1)",
+                      fontSize: "22px",
+                      fontWeight: "800",
+                      color: v > 20 ? colors.scoreColor : "#374151",
+                      lineHeight: 1,
                     }}
                   >
-                    {val}
+                    {v}
                   </div>
                   <div
                     style={{
-                      fontSize: "10px",
-                      color: "var(--text3)",
-                      textTransform: "capitalize",
+                      fontSize: "11px",
+                      fontWeight: "600",
+                      color: "#6B7280",
+                      marginTop: "4px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
                     }}
                   >
-                    {key}
+                    {k}
                   </div>
                 </div>
               ))}
@@ -332,53 +476,48 @@ function ResultCard({ result }) {
   );
 }
 
-// Simulate API call — replace with real fetch to FastAPI
+// ── Mock API — replace body with real fetch() when FastAPI is ready ───────────
 async function analyseMessage({ channel, message, url }) {
   await new Promise((r) => setTimeout(r, 1500));
 
   const text = message || url || "";
   const isScam =
-    /urgent|suspended|verify|click|claim|free|won|prize|password|account|bank|login/i.test(
-      text
-    );
+    /urgent|suspended|verify|click|claim|free|won|prize|password|account|bank|login/i.test(text);
   const isPhishing =
     /bit\.ly|xyz|verify|secure|login|claim|relief/i.test(text);
 
-  const nlpScore = isScam ? 52 : 12;
-  const urlScore = isPhishing ? 28 : 4;
-  const senderScore = isScam ? 10 : 2;
-  const total = Math.min(nlpScore + urlScore + senderScore, 100);
+  const nlpScore    = isScam     ? 52 : 12;
+  const urlScore    = isPhishing ? 28 :  4;
+  const senderScore = isScam     ? 10 :  2;
+  const total       = Math.min(nlpScore + urlScore + senderScore, 100);
 
   return {
-    score: total,
+    score:      total,
     confidence: Math.round(72 + Math.random() * 20),
-    breakdown: {
-      NLP: nlpScore,
-      URL: urlScore,
-      Sender: senderScore,
-    },
+    breakdown:  { NLP: nlpScore, URL: urlScore, Sender: senderScore },
     reasons: isScam
       ? [
-          { text: "Urgency language detected", category: "NLP · Intent", points: 38 },
-          { text: "Suspicious URL pattern", category: "URL · Domain", points: 28 },
-          { text: "Known scam phrase match", category: "NLP · Keywords", points: 21 },
+          { text: "Urgency language detected",  category: "NLP · Intent",         points: 38 },
+          { text: "Suspicious URL pattern",     category: "URL · Domain",          points: 28 },
+          { text: "Known scam phrase match",    category: "NLP · Keywords",        points: 21 },
         ]
       : [
-          { text: "No urgency language found", category: "NLP · Intent", points: 2 },
-          { text: "Domain appears legitimate", category: "URL · Domain", points: 4 },
-          { text: "No blacklist match", category: "Sender · Reputation", points: 2 },
+          { text: "No urgency language found",  category: "NLP · Intent",         points: 2  },
+          { text: "Domain appears legitimate",  category: "URL · Domain",          points: 4  },
+          { text: "No blacklist match",         category: "Sender · Reputation",   points: 2  },
         ],
   };
 }
 
+// ── Main page ─────────────────────────────────────────────────────────────────
 export function AnalysePage() {
-  const [channel, setChannel] = useState("text");
-  const [message, setMessage] = useState("");
-  const [url, setUrl] = useState("");
+  const [channel,  setChannel]  = useState("text");
+  const [message,  setMessage]  = useState("");
+  const [url,      setUrl]      = useState("");
   const [fileName, setFileName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState("");
+  const [loading,  setLoading]  = useState(false);
+  const [result,   setResult]   = useState(null);
+  const [error,    setError]    = useState("");
 
   async function handleAnalyse() {
     setError("");
@@ -387,18 +526,17 @@ export function AnalysePage() {
     try {
       const data = await analyseMessage({ channel, message, url });
       setResult(data);
-      // Save to localStorage history
       const history = JSON.parse(localStorage.getItem("scanHistory") || "[]");
       history.unshift({
-        id: Date.now(),
+        id:        Date.now(),
         channel,
-        preview: (message || url).slice(0, 80),
-        score: data.score,
-        label: getRiskLabel(data.score),
+        preview:   (message || url).slice(0, 80),
+        score:     data.score,
+        label:     getRiskKey(data.score),
         timestamp: new Date().toISOString(),
       });
       localStorage.setItem("scanHistory", JSON.stringify(history.slice(0, 50)));
-    } catch (e) {
+    } catch {
       setError("Failed to connect to the analysis server. Is your FastAPI running?");
     } finally {
       setLoading(false);
@@ -426,14 +564,18 @@ export function AnalysePage() {
 
   return (
     <div style={{ maxWidth: "680px", margin: "0 auto" }}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
 
-      {/* Example buttons */}
+      {/* ── Example buttons ── */}
       <div style={{ marginBottom: "20px" }}>
         <div
           style={{
-            fontSize: "12px",
-            fontWeight: "600",
-            color: "var(--text3)",
+            fontSize: "11px",
+            fontWeight: "700",
+            letterSpacing: "0.06em",
+            color: "#6B7280",
             marginBottom: "8px",
           }}
         >
@@ -446,18 +588,18 @@ export function AnalysePage() {
               onClick={() => handleExample(ex)}
               style={{
                 fontSize: "12px",
-                padding: "6px 14px",
+                padding: "7px 16px",
                 borderRadius: "20px",
-                border: "1px solid var(--border)",
-                background: "var(--bg2)",
-                color: "var(--text2)",
+                border: "1.5px solid #E5E7EB",
+                background: "#F9FAFB",
+                color: "#374151",
                 cursor: "pointer",
                 fontWeight: "500",
                 transition: "all 0.15s",
               }}
             >
-              {ex.label === "Phishing SMS" && "🎣 "}
-              {ex.label === "Scam Email" && "📧 "}
+              {ex.label === "Phishing SMS"  && "🎣 "}
+              {ex.label === "Scam Email"    && "📧 "}
               {ex.label === "Legit Message" && "✅ "}
               {ex.label}
             </button>
@@ -465,84 +607,89 @@ export function AnalysePage() {
         </div>
       </div>
 
+      {/* ── Input card ── */}
       <div className="card">
-        <h2 style={{ marginBottom: "20px" }}>Analyse Message</h2>
+        <h2 style={{ marginBottom: "20px", color: "#111827" }}>
+          Analyse Message
+        </h2>
 
-        {/* Channel selector */}
+        {/* Channel tabs */}
         <div style={{ marginBottom: "20px" }}>
-          <label
+          <div
             style={{
-              display: "block",
+              fontSize: "11px",
+              fontWeight: "700",
+              letterSpacing: "0.06em",
+              color: "#6B7280",
               marginBottom: "8px",
-              fontSize: "12px",
-              fontWeight: "600",
-              color: "var(--text3)",
             }}
           >
             SELECT CHANNEL
-          </label>
+          </div>
           <div style={{ display: "flex", gap: "8px" }}>
-            {["text", "file", "url"].map((ch) => (
+            {[
+              { id: "text", icon: "✏️", label: "Text"  },
+              { id: "file", icon: "📁", label: "File"  },
+              { id: "url",  icon: "🔗", label: "URL"   },
+            ].map((ch) => (
               <button
-                key={ch}
+                key={ch.id}
                 onClick={() => {
-                  setChannel(ch);
+                  setChannel(ch.id);
                   setMessage("");
                   setUrl("");
                   setFileName("");
                   setResult(null);
                 }}
                 style={{
-                  padding: "7px 18px",
+                  padding: "8px 18px",
                   borderRadius: "8px",
-                  border: `1.5px solid ${channel === ch ? "var(--accent, #6366f1)" : "var(--border)"}`,
-                  background: channel === ch ? "var(--accent-light, #eef2ff)" : "var(--bg2)",
-                  color: channel === ch ? "var(--accent, #6366f1)" : "var(--text2)",
-                  fontWeight: channel === ch ? "600" : "400",
+                  border: `1.5px solid ${channel === ch.id ? "#6366F1" : "#E5E7EB"}`,
+                  background: channel === ch.id ? "#EEF2FF" : "#F9FAFB",
+                  color: channel === ch.id ? "#4338CA" : "#374151",
+                  fontWeight: channel === ch.id ? "700" : "400",
                   fontSize: "13px",
                   cursor: "pointer",
-                  textTransform: "capitalize",
                   transition: "all 0.15s",
                 }}
               >
-                {ch === "text" && "✏️ "}
-                {ch === "file" && "📁 "}
-                {ch === "url" && "🔗 "}
-                {ch}
+                {ch.icon} {ch.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Text input */}
+        {/* Text */}
         {channel === "text" && (
           <div style={{ marginBottom: "20px" }}>
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
+                alignItems: "center",
                 marginBottom: "8px",
               }}
             >
-              <label
+              <span
                 style={{
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  color: "var(--text3)",
+                  fontSize: "11px",
+                  fontWeight: "700",
+                  letterSpacing: "0.06em",
+                  color: "#6B7280",
                 }}
               >
                 MESSAGE BODY
-              </label>
+              </span>
               {message && (
                 <button
                   onClick={() => { setMessage(""); setResult(null); }}
                   style={{
                     fontSize: "11px",
-                    color: "var(--text3)",
+                    color: "#9CA3AF",
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    padding: "0",
+                    fontWeight: "500",
                   }}
                 >
                   ✕ Clear
@@ -552,25 +699,27 @@ export function AnalysePage() {
             <textarea
               value={message}
               onChange={(e) => { setMessage(e.target.value); setResult(null); }}
-              placeholder="Paste the message text here..."
+              placeholder="Paste your message here..."
               rows={5}
               style={{
                 width: "100%",
-                padding: "12px",
-                borderRadius: "8px",
-                border: "1px solid var(--border)",
-                background: "var(--bg2)",
-                color: "var(--text1)",
-                fontSize: "13px",
+                padding: "12px 14px",
+                borderRadius: "10px",
+                border: "1.5px solid #E5E7EB",
+                background: "#F9FAFB",
+                color: "#111827",
+                fontSize: "14px",
                 resize: "vertical",
                 fontFamily: "inherit",
                 lineHeight: "1.6",
+                outline: "none",
+                boxSizing: "border-box",
               }}
             />
             <div
               style={{
                 fontSize: "11px",
-                color: "var(--text3)",
+                color: "#9CA3AF",
                 marginTop: "4px",
                 textAlign: "right",
               }}
@@ -580,46 +729,50 @@ export function AnalysePage() {
           </div>
         )}
 
-        {/* File input */}
+        {/* File */}
         {channel === "file" && (
           <div style={{ marginBottom: "20px" }}>
-            <label
+            <span
               style={{
-                fontSize: "12px",
-                fontWeight: "600",
-                color: "var(--text3)",
+                fontSize: "11px",
+                fontWeight: "700",
+                letterSpacing: "0.06em",
+                color: "#6B7280",
                 display: "block",
                 marginBottom: "8px",
               }}
             >
               UPLOAD FILE
-            </label>
+            </span>
             <label
               style={{
                 display: "block",
-                border: "2px dashed var(--border)",
-                borderRadius: "10px",
-                padding: "28px",
+                border: "2px dashed #D1D5DB",
+                borderRadius: "12px",
+                padding: "32px",
                 textAlign: "center",
                 cursor: "pointer",
-                background: "var(--bg2)",
+                background: "#F9FAFB",
+                transition: "border-color 0.15s",
               }}
             >
-              <div style={{ fontSize: "24px", marginBottom: "6px" }}>📂</div>
+              <div style={{ fontSize: "28px", marginBottom: "8px" }}>📂</div>
               <div
                 style={{
-                  fontSize: "13px",
+                  fontSize: "14px",
                   fontWeight: "600",
-                  color: "var(--text1)",
+                  color: "#374151",
                   marginBottom: "4px",
                 }}
               >
                 {fileName || "Click to upload"}
               </div>
-              <div style={{ fontSize: "11px", color: "var(--text3)" }}>
+              <div style={{ fontSize: "11px", color: "#9CA3AF" }}>
+                .txt · .csv · .json · .eml
               </div>
               <input
                 type="file"
+                accept=".txt,.csv,.json,.eml"
                 onChange={(e) => handleFileRead(e.target.files[0])}
                 style={{ display: "none" }}
               />
@@ -632,34 +785,36 @@ export function AnalysePage() {
                 style={{
                   width: "100%",
                   marginTop: "10px",
-                  padding: "10px",
+                  padding: "10px 12px",
                   borderRadius: "8px",
-                  border: "1px solid var(--border)",
-                  background: "var(--bg2)",
-                  color: "var(--text2)",
-                  fontSize: "11px",
+                  border: "1px solid #E5E7EB",
+                  background: "#F9FAFB",
+                  color: "#374151",
+                  fontSize: "12px",
                   fontFamily: "monospace",
                   resize: "vertical",
+                  boxSizing: "border-box",
                 }}
               />
             )}
           </div>
         )}
 
-        {/* URL input */}
+        {/* URL */}
         {channel === "url" && (
           <div style={{ marginBottom: "20px" }}>
-            <label
+            <span
               style={{
-                fontSize: "12px",
-                fontWeight: "600",
-                color: "var(--text3)",
+                fontSize: "11px",
+                fontWeight: "700",
+                letterSpacing: "0.06em",
+                color: "#6B7280",
                 display: "block",
                 marginBottom: "8px",
               }}
             >
               ENTER URL
-            </label>
+            </span>
             <input
               type="url"
               value={url}
@@ -667,21 +822,17 @@ export function AnalysePage() {
               placeholder="https://suspicious-site.com"
               style={{
                 width: "100%",
-                padding: "11px 14px",
-                borderRadius: "8px",
-                border: "1px solid var(--border)",
-                background: "var(--bg2)",
-                color: "var(--text1)",
-                fontSize: "13px",
+                padding: "12px 14px",
+                borderRadius: "10px",
+                border: "1.5px solid #E5E7EB",
+                background: "#F9FAFB",
+                color: "#111827",
+                fontSize: "14px",
+                outline: "none",
+                boxSizing: "border-box",
               }}
             />
-            <div
-              style={{
-                fontSize: "11px",
-                color: "var(--text3)",
-                marginTop: "6px",
-              }}
-            >
+            <div style={{ fontSize: "11px", color: "#9CA3AF", marginTop: "6px" }}>
               Checks domain age, blacklist, and redirect chains
             </div>
           </div>
@@ -691,13 +842,14 @@ export function AnalysePage() {
         {error && (
           <div
             style={{
-              padding: "10px 14px",
+              padding: "12px 14px",
               borderRadius: "8px",
-              background: "#FCEBEB",
-              color: "#A32D2D",
-              fontSize: "12px",
+              background: "#FFF1F2",
+              color: "#9F1239",
+              fontSize: "13px",
+              fontWeight: "500",
               marginBottom: "16px",
-              border: "1px solid #E24B4A44",
+              border: "1px solid #FECDD3",
             }}
           >
             ⚠️ {error}
@@ -710,35 +862,37 @@ export function AnalysePage() {
           disabled={!canAnalyse || loading}
           style={{
             width: "100%",
-            padding: "13px",
+            padding: "14px",
             borderRadius: "10px",
             border: "none",
-            background: canAnalyse && !loading ? "var(--accent, #6366f1)" : "var(--bg3, #ccc)",
-            color: canAnalyse && !loading ? "#fff" : "var(--text3)",
-            fontSize: "14px",
-            fontWeight: "600",
-            cursor: canAnalyse && !loading ? "pointer" : "not-allowed",
+            background:
+              !canAnalyse || loading ? "#E5E7EB" : "#6366F1",
+            color:
+              !canAnalyse || loading ? "#9CA3AF" : "#FFFFFF",
+            fontSize: "15px",
+            fontWeight: "700",
+            cursor: !canAnalyse || loading ? "not-allowed" : "pointer",
             transition: "all 0.2s",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: "8px",
+            gap: "10px",
+            letterSpacing: "-0.01em",
           }}
         >
           {loading ? (
             <>
               <span
                 style={{
-                  width: "16px",
-                  height: "16px",
-                  border: "2px solid #ffffff44",
-                  borderTop: "2px solid #fff",
+                  width: "18px",
+                  height: "18px",
+                  border: "2.5px solid #FFFFFF44",
+                  borderTop: "2.5px solid #FFFFFF",
                   borderRadius: "50%",
                   display: "inline-block",
                   animation: "spin 0.8s linear infinite",
                 }}
               />
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               Analysing...
             </>
           ) : (
