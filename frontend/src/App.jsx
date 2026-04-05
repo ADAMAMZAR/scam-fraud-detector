@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { Topbar } from "./components/Topbar";
 import { GlobalStyles } from "./components/GlobalStyles";
@@ -12,8 +12,27 @@ import { SettingsPage } from "./pages/SettingsPage";
  * App Root Component
  * Main application shell with routing and layout
  */
+const VALID_PAGES = ["analyse", "messages", "analytics", "batch", "settings"];
+
+function getPageFromHash() {
+  const hash = window.location.hash.replace("#", "");
+  return VALID_PAGES.includes(hash) ? hash : "analyse";
+}
+
 function App() {
-  const [activePage, setActivePage] = useState("analyse");
+  const [activePage, setActivePage] = useState(getPageFromHash);
+
+  // Keep URL hash in sync with active page
+  useEffect(() => {
+    window.location.hash = activePage;
+  }, [activePage]);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const onHashChange = () => setActivePage(getPageFromHash());
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
 
   // Page configuration
   const pages = {

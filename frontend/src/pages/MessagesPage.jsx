@@ -1,61 +1,66 @@
-import { useState } from "react";
-import { MOCK_MESSAGES } from "../data/mockData";
+import { useState, useEffect } from "react";
 import { CHANNEL_ICONS } from "../constants/config";
 import { VerdictBadge } from "../components/VerdictBadge";
-import { ScoreBar } from "../components/ScoreBar";
 import { fmtTime } from "../utils/formatters";
+import { MessageDetail } from "../components/MessageDetail";
 
 /**
  * MessagesPage - Display and filter messages
  */
 export function MessagesPage() {
+  const [messages, setMessages] = useState([]);
   const [selectedMsg, setSelectedMsg] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchHistory() {
+      try {
+        const response = await fetch("http://localhost:8000/history");
+        if (response.ok) {
+          const data = await response.json();
+          setMessages(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch history:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchHistory();
+  }, []);
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "16px", height: "100%" }}>
       {/* Message List */}
       <div className="card" style={{ maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}>
         <div className="card-title">Recent Messages</div>
-        {MOCK_MESSAGES.map((msg) => (
-          <div
-            key={msg.id}
-            className={`msg-row ${selectedMsg?.id === msg.id ? "selected" : ""}`}
-            onClick={() => setSelectedMsg(msg)}
-          >
-            <div className="channel-chip">{CHANNEL_ICONS[msg.channel]}</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="msg-sender">{msg.sender}</div>
-              <div className="msg-preview">{msg.body}</div>
+        {loading ? (
+          <div style={{ padding: "20px", textAlign: "center", color: "var(--text3)" }}>Loading history...</div>
+        ) : messages.length === 0 ? (
+          <div style={{ padding: "20px", textAlign: "center", color: "var(--text3)" }}>No messages found in database.</div>
+        ) : (
+          messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`msg-row ${selectedMsg?.id === msg.id ? "selected" : ""}`}
+              onClick={() => setSelectedMsg(msg)}
+            >
+              <div className="channel-chip">{CHANNEL_ICONS[msg.channel] || "💬"}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="msg-sender">{msg.sender}</div>
+                <div className="msg-preview">{msg.message_body}</div>
+              </div>
+              <div className="msg-meta">
+                <div className="msg-time">{fmtTime(msg.created_at)}</div>
+                <VerdictBadge verdict={msg.verdict} />
+              </div>
             </div>
-            <div className="msg-meta">
-              <div className="msg-time">{fmtTime(msg.received_at)}</div>
-              <VerdictBadge verdict={msg.verdict} />
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Detail Panel */}
-      {selectedMsg ? (
-        <div className="card" style={{ maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", paddingBottom: "16px", borderBottom: "1px solid var(--border)" }}>
-            <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "600" }}>Message Details</h3>
-            <button
-              onClick={() => setSelectedMsg(null)}
-              style={{
-                background: "none",
-                border: "none",
-                color: "var(--text3)",
-                cursor: "pointer",
-                fontSize: "16px",
-              }}
-            >
-              ✕
-            </button>
-          </div>
-          {/* Message detail content will be rendered here */}
-        </div>
-      ) : null}
+      <MessageDetail msg={selectedMsg} onAnalyze={() => {}} />
     </div>
   );
 }

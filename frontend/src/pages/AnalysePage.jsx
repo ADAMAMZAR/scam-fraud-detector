@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { analyseMessageAI } from "./gemini";
 
 const EXAMPLES = [
   {
@@ -476,38 +477,7 @@ function ResultCard({ result }) {
   );
 }
 
-// ── Mock API — replace body with real fetch() when FastAPI is ready ───────────
-async function analyseMessage({ channel, message, url }) {
-  await new Promise((r) => setTimeout(r, 1500));
-
-  const text = message || url || "";
-  const isScam =
-    /urgent|suspended|verify|click|claim|free|won|prize|password|account|bank|login/i.test(text);
-  const isPhishing =
-    /bit\.ly|xyz|verify|secure|login|claim|relief/i.test(text);
-
-  const nlpScore    = isScam     ? 52 : 12;
-  const urlScore    = isPhishing ? 28 :  4;
-  const senderScore = isScam     ? 10 :  2;
-  const total       = Math.min(nlpScore + urlScore + senderScore, 100);
-
-  return {
-    score:      total,
-    confidence: Math.round(72 + Math.random() * 20),
-    breakdown:  { NLP: nlpScore, URL: urlScore, Sender: senderScore },
-    reasons: isScam
-      ? [
-          { text: "Urgency language detected",  category: "NLP · Intent",         points: 38 },
-          { text: "Suspicious URL pattern",     category: "URL · Domain",          points: 28 },
-          { text: "Known scam phrase match",    category: "NLP · Keywords",        points: 21 },
-        ]
-      : [
-          { text: "No urgency language found",  category: "NLP · Intent",         points: 2  },
-          { text: "Domain appears legitimate",  category: "URL · Domain",          points: 4  },
-          { text: "No blacklist match",         category: "Sender · Reputation",   points: 2  },
-        ],
-  };
-}
+// Using Gemini AI for analysis now
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export function AnalysePage() {
@@ -524,20 +494,25 @@ export function AnalysePage() {
     setResult(null);
     setLoading(true);
     try {
-      const data = await analyseMessage({ channel, message, url });
-      setResult(data);
-      const history = JSON.parse(localStorage.getItem("scanHistory") || "[]");
-      history.unshift({
-        id:        Date.now(),
-        channel,
-        preview:   (message || url).slice(0, 80),
-        score:     data.score,
-        label:     getRiskKey(data.score),
-        timestamp: new Date().toISOString(),
+      const response = await fetch("http://localhost:8000/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: message || url,
+          channel: channel === "url" ? "url" : channel,
+          sender: channel === "url" ? url : "User Upload"
+        }),
       });
-      localStorage.setItem("scanHistory", JSON.stringify(history.slice(0, 50)));
-    } catch {
-      setError("Failed to connect to the analysis server. Is your FastAPI running?");
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Analysis failed");
+      }
+
+      const data = await response.json();
+      setResult(data);
+    } catch (e) {
+      setError(e.message || "Failed to connect to the analysis server. Is your FastAPI running?");
     } finally {
       setLoading(false);
     }

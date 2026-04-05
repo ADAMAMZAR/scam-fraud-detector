@@ -8,7 +8,7 @@ export function GlobalStyles() {
 
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-      :root {
+      :root, [data-theme="dark"] {
         --bg: #0A0F1E;
         --surface: #111827;
         --surface2: #1A2236;
@@ -20,6 +20,22 @@ export function GlobalStyles() {
         --text: #F1F5F9;
         --text2: #94A3B8;
         --text3: #475569;
+        --font-display: 'Syne', sans-serif;
+        --font-body: 'DM Sans', sans-serif;
+      }
+
+      [data-theme="light"] {
+        --bg: #F8FAFC;
+        --surface: #FFFFFF;
+        --surface2: #F1F5F9;
+        --border: rgba(0,0,0,0.08);
+        --border2: rgba(0,0,0,0.14);
+        --accent: #6366F1;
+        --accent2: #EC4899;
+        --accent3: #10B981;
+        --text: #0F172A;
+        --text2: #475569;
+        --text3: #94A3B8;
         --font-display: 'Syne', sans-serif;
         --font-body: 'DM Sans', sans-serif;
       }
@@ -100,7 +116,7 @@ export function GlobalStyles() {
         height: 60px; border-bottom: 1px solid var(--border);
         display: flex; align-items: center; padding: 0 28px;
         gap: 16px; position: sticky; top: 0; z-index: 50;
-        background: rgba(10,15,30,0.85); backdrop-filter: blur(12px);
+        background: rgba(var(--bg-rgb, 10,15,30), 0.85); backdrop-filter: blur(12px);
       }
       .page-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; }
       .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }

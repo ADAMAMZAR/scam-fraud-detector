@@ -260,6 +260,27 @@ export function SettingsPage() {
   const [history, setHistory]       = useState(loadHistory);
   const [copied, setCopied]         = useState("");   // "url" | "key" | ""
 
+  // Load settings from backend on mount
+  useEffect(() => {
+    async function loadFromDB() {
+      try {
+        const res = await fetch(`${loadSettings().apiUrl}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          const merged = {
+            ...loadSettings(),
+            darkMode: data.dark_mode ?? true,
+            safeThreshold: data.safe_threshold ?? 40,
+            fraudThreshold: data.fraud_threshold ?? 75,
+          };
+          setSettings(merged);
+          localStorage.setItem("appSettings", JSON.stringify(merged));
+        }
+      } catch { /* offline — use localStorage */ }
+    }
+    loadFromDB();
+  }, []);
+
   // Derived stats
   const stats = {
     total:      history.length,
@@ -268,12 +289,18 @@ export function SettingsPage() {
     safe:       history.filter((h) => h.label === "Safe").length,
   };
 
-  // Auto-apply dark mode to <html>
+  // Auto-apply dark mode to <html> AND immediately persist to DB
   useEffect(() => {
     document.documentElement.setAttribute(
       "data-theme",
       settings.darkMode ? "dark" : "light"
     );
+    // Sync to backend (fire-and-forget)
+    fetch(`${settings.apiUrl}/settings`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dark_mode: settings.darkMode }),
+    }).catch(() => {});
   }, [settings.darkMode]);
 
   // Toast helper
@@ -288,12 +315,22 @@ export function SettingsPage() {
     setHasChanges(true);
   }
 
-  // Save everything to localStorage
-  function handleSave() {
+  // Save everything to localStorage AND backend
+  async function handleSave() {
     try {
       const final = { ...settings, apiKey: apiKeyInput };
       localStorage.setItem("appSettings", JSON.stringify(final));
       setSettings(final);
+      // Sync thresholds to backend
+      await fetch(`${final.apiUrl}/settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dark_mode: final.darkMode,
+          safe_threshold: final.safeThreshold,
+          fraud_threshold: final.fraudThreshold,
+        }),
+      });
       setHasChanges(false);
       showToast("✓ Settings saved");
     } catch {
@@ -335,26 +372,35 @@ export function SettingsPage() {
   }
 
   // Export scan history as CSV download
-  function exportCSV() {
-    if (!history.length) {
-      showToast("No scan history to export", "error");
-      return;
+  async function exportCSV() {
+    try {
+      const response = await fetch(`${settings.apiUrl}/history?limit=1000`);
+      if (!response.ok) throw new Error("Failed to fetch history for export");
+      
+      const data = await response.json();
+      if (!data.length) {
+        showToast("No scan history to export", "error");
+        return;
+      }
+      
+      const headers = ["id", "created_at", "channel", "message_body", "score", "verdict"];
+      const rows = data.map((h) =>
+        headers
+          .map((k) => `"${String(h[k] ?? "").replace(/"/g, '""')}"`)
+          .join(",")
+      );
+      const csv  = [headers.join(","), ...rows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `scans-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`✓ Exported ${data.length} records`);
+    } catch (err) {
+      showToast("Export failed", "error");
     }
-    const headers = ["id", "timestamp", "channel", "preview", "score", "label"];
-    const rows = history.map((h) =>
-      headers
-        .map((k) => `"${String(h[k] ?? "").replace(/"/g, '""')}"`)
-        .join(",")
-    );
-    const csv  = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href     = url;
-    a.download = `scans-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast(`✓ Exported ${history.length} records`);
   }
 
   const { safeThreshold: ST, fraudThreshold: FT } = settings;
