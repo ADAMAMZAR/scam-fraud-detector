@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { analyseMessageAI } from "./gemini";
 
 const EXAMPLES = [
   {

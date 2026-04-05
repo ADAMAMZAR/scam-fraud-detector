@@ -12,8 +12,9 @@ venv/
 .venv/
 env/
 ENV/
-.env/
-backend/venv/
+
+# Kaggle / large dataset files
+backend/data/
 
 # ─── Environment variables ────────────────────────────────────────────────────
 .env
@@ -27,7 +28,6 @@ node_modules/
 dist/
 build/
 .npm/
-*.local
 
 # ─── Database ────────────────────────────────────────────────────────────────
 *.db
@@ -55,5 +55,6 @@ pip-log.txt
 *.egg-info/
 .eggs/
 *.egg
-dist/
-build/
+
+# ─── Docs (internal / not for version control) ────────────────────────────────
+docs/
