@@ -1,94 +1,882 @@
-import { useState } from "react";
-import { Toggle } from "../components/Toggle";
+import { useState, useEffect, useCallback } from "react";
 
-/**
- * SettingsPage - Application settings
- */
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const DEFAULT_SETTINGS = {
+  darkMode: true,
+  apiUrl: "http://localhost:8000",
+  apiKey: "",
+  safeThreshold: 40,
+  fraudThreshold: 75,
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function loadSettings() {
+  try {
+    const saved = localStorage.getItem("appSettings");
+    return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
+function loadHistory() {
+  try {
+    return JSON.parse(localStorage.getItem("scanHistory") || "[]");
+  } catch {
+    return [];
+  }
+}
+
+// ─── Small components ─────────────────────────────────────────────────────────
+
+function Toggle({ on, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      role="switch"
+      aria-checked={on}
+      style={{
+        width: "44px",
+        height: "24px",
+        borderRadius: "12px",
+        border: "none",
+        background: on ? "#6366f1" : "var(--border, #d1d5db)",
+        cursor: "pointer",
+        position: "relative",
+        flexShrink: 0,
+        transition: "background 0.2s",
+      }}
+    >
+      <span
+        style={{
+          position: "absolute",
+          top: "3px",
+          left: on ? "23px" : "3px",
+          width: "18px",
+          height: "18px",
+          borderRadius: "50%",
+          background: "#fff",
+          transition: "left 0.2s",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+        }}
+      />
+    </button>
+  );
+}
+
+function Section({ title, icon, children }) {
+  return (
+    <div style={{ marginBottom: "24px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          marginBottom: "8px",
+        }}
+      >
+        {icon && <span style={{ fontSize: "13px" }}>{icon}</span>}
+        <span
+          style={{
+            fontSize: "11px",
+            fontWeight: "700",
+            letterSpacing: "0.07em",
+            color: "var(--text3, #6b7280)",
+            textTransform: "uppercase",
+          }}
+        >
+          {title}
+        </span>
+      </div>
+      <div
+        style={{
+          border: "0.5px solid var(--border, #e5e7eb)",
+          borderRadius: "12px",
+          overflow: "hidden",
+          background: "var(--bg1, #ffffff)",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Row({ icon, label, desc, children, last }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        padding: "13px 16px",
+        borderBottom: last ? "none" : "0.5px solid var(--border, #e5e7eb)",
+      }}
+    >
+      {icon && (
+        <div
+          style={{
+            width: "32px",
+            height: "32px",
+            borderRadius: "8px",
+            background: "var(--bg2, #f9fafb)",
+            border: "0.5px solid var(--border, #e5e7eb)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "15px",
+            flexShrink: 0,
+          }}
+        >
+          {icon}
+        </div>
+      )}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: "13px",
+            fontWeight: "500",
+            color: "var(--text1, #111827)",
+            marginBottom: "1px",
+          }}
+        >
+          {label}
+        </div>
+        {desc && (
+          <div
+            style={{
+              fontSize: "11px",
+              color: "var(--text3, #9ca3af)",
+              lineHeight: 1.5,
+            }}
+          >
+            {desc}
+          </div>
+        )}
+      </div>
+      <div style={{ flexShrink: 0 }}>{children}</div>
+    </div>
+  );
+}
+
+function StatCard({ label, value, color }) {
+  return (
+    <div
+      style={{
+        flex: 1,
+        textAlign: "center",
+        padding: "12px 8px",
+        borderRadius: "10px",
+        background: "var(--bg2, #f9fafb)",
+        border: "0.5px solid var(--border, #e5e7eb)",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "24px",
+          fontWeight: "700",
+          color,
+          lineHeight: 1,
+        }}
+      >
+        {value}
+      </div>
+      <div
+        style={{
+          fontSize: "10px",
+          color: "var(--text3, #9ca3af)",
+          marginTop: "4px",
+        }}
+      >
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  if (!status) return null;
+  const map = {
+    testing: { bg: "#fef9c3", color: "#854d0e", text: "Testing..." },
+    success: { bg: "#dcfce7", color: "#166534", text: "✓ Connected" },
+    error:   { bg: "#fee2e2", color: "#991b1b", text: "✗ Unreachable" },
+  };
+  const s = map[status];
+  return (
+    <span
+      style={{
+        fontSize: "11px",
+        fontWeight: "600",
+        padding: "3px 10px",
+        borderRadius: "20px",
+        background: s.bg,
+        color: s.color,
+        transition: "all 0.2s",
+      }}
+    >
+      {s.text}
+    </span>
+  );
+}
+
+function Toast({ message, type }) {
+  if (!message) return null;
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: "24px",
+        right: "24px",
+        padding: "12px 18px",
+        borderRadius: "10px",
+        background: type === "error" ? "#fee2e2" : "#dcfce7",
+        color: type === "error" ? "#991b1b" : "#166534",
+        border: `1px solid ${type === "error" ? "#fca5a5" : "#86efac"}`,
+        fontSize: "13px",
+        fontWeight: "500",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
+        zIndex: 9999,
+        maxWidth: "300px",
+        animation: "toastIn 0.25s ease",
+      }}
+    >
+      <style>{`@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      {message}
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export function SettingsPage() {
-  const [settings, setSettings] = useState({
-    emailNotifications: true,
-    darkMode: true,
-    autoAnalyze: false,
-    dataRetention: 30,
-  });
+  const [settings, setSettings]     = useState(loadSettings);
+  const [apiKeyInput, setApiKeyInput] = useState(() => loadSettings().apiKey);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [apiStatus, setApiStatus]   = useState(null);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [toast, setToast]           = useState({ message: "", type: "success" });
+  const [history, setHistory]       = useState(loadHistory);
+  const [copied, setCopied]         = useState("");   // "url" | "key" | ""
 
-  const handleToggle = (key) => {
-    setSettings((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+  // Derived stats
+  const stats = {
+    total:      history.length,
+    fraud:      history.filter((h) => h.label === "Fraud").length,
+    suspicious: history.filter((h) => h.label === "Suspicious").length,
+    safe:       history.filter((h) => h.label === "Safe").length,
   };
 
-  return (
-    <div className="card" style={{ maxWidth: "600px" }}>
-      <h2 style={{ marginBottom: "24px" }}>Settings</h2>
+  // Auto-apply dark mode to <html>
+  useEffect(() => {
+    document.documentElement.setAttribute(
+      "data-theme",
+      settings.darkMode ? "dark" : "light"
+    );
+  }, [settings.darkMode]);
 
-      {/* Notification Settings */}
-      <div style={{ marginBottom: "32px" }}>
-        <h3 style={{ fontSize: "13px", fontWeight: "700", marginBottom: "16px", color: "var(--text2)" }}>
-          NOTIFICATIONS
-        </h3>
-        <div className="settings-row">
-          <div className="settings-label">
-            <strong>Email Notifications</strong>
-            <span>Receive alerts for high-risk messages</span>
-          </div>
-          <Toggle
-            on={settings.emailNotifications}
-            onToggle={() => handleToggle("emailNotifications")}
-          />
+  // Toast helper
+  const showToast = useCallback((message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast({ message: "", type: "success" }), 3000);
+  }, []);
+
+  // Update one setting key
+  function set(key, value) {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+    setHasChanges(true);
+  }
+
+  // Save everything to localStorage
+  function handleSave() {
+    try {
+      const final = { ...settings, apiKey: apiKeyInput };
+      localStorage.setItem("appSettings", JSON.stringify(final));
+      setSettings(final);
+      setHasChanges(false);
+      showToast("✓ Settings saved");
+    } catch {
+      showToast("Failed to save settings", "error");
+    }
+  }
+
+  // Real API health check — hits GET /health on your FastAPI
+  async function testConnection() {
+    setApiStatus("testing");
+    try {
+      const res = await fetch(`${settings.apiUrl}/health`, {
+        method: "GET",
+        signal: AbortSignal.timeout(5000),
+      });
+      if (res.ok) {
+        setApiStatus("success");
+        showToast("✓ API connected successfully");
+      } else {
+        setApiStatus("error");
+        showToast(`API returned ${res.status}`, "error");
+      }
+    } catch (err) {
+      setApiStatus("error");
+      showToast("Cannot reach API — is FastAPI running?", "error");
+    }
+  }
+
+  // Copy to clipboard
+  async function copy(text, key) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(key);
+      setTimeout(() => setCopied(""), 2000);
+      showToast(`✓ ${key === "url" ? "URL" : "API key"} copied`);
+    } catch {
+      showToast("Copy failed", "error");
+    }
+  }
+
+  // Export scan history as CSV download
+  function exportCSV() {
+    if (!history.length) {
+      showToast("No scan history to export", "error");
+      return;
+    }
+    const headers = ["id", "timestamp", "channel", "preview", "score", "label"];
+    const rows = history.map((h) =>
+      headers
+        .map((k) => `"${String(h[k] ?? "").replace(/"/g, '""')}"`)
+        .join(",")
+    );
+    const csv  = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `scans-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`✓ Exported ${history.length} records`);
+  }
+
+  const { safeThreshold: ST, fraudThreshold: FT } = settings;
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  return (
+    <div style={{ maxWidth: "580px", margin: "0 auto", paddingBottom: "48px" }}>
+
+      {/* ── Header ── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "24px",
+        }}
+      >
+        <div>
+          <h2 style={{ margin: "0 0 3px" }}>Settings</h2>
+          <p style={{ margin: 0, fontSize: "12px", color: "var(--text3, #9ca3af)" }}>
+            Configure your scam detection system
+          </p>
         </div>
+        <button
+          onClick={handleSave}
+          disabled={!hasChanges}
+          style={{
+            padding: "9px 20px",
+            borderRadius: "9px",
+            border: "none",
+            background: hasChanges ? "#6366f1" : "var(--bg2, #f3f4f6)",
+            color: hasChanges ? "#fff" : "var(--text3, #9ca3af)",
+            fontSize: "13px",
+            fontWeight: "600",
+            cursor: hasChanges ? "pointer" : "default",
+            transition: "all 0.2s",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {hasChanges ? "💾 Save Changes" : "✓ Saved"}
+        </button>
       </div>
 
-      {/* Privacy Settings */}
-      <div style={{ marginBottom: "32px" }}>
-        <h3 style={{ fontSize: "13px", fontWeight: "700", marginBottom: "16px", color: "var(--text2)" }}>
-          PRIVACY
-        </h3>
-        <div className="settings-row">
-          <div className="settings-label">
-            <strong>Auto Analysis</strong>
-            <span>Automatically analyze incoming messages</span>
+      {/* ══════════════════════════════════════════════════════════════════════
+          1. SCAN SUMMARY
+      ══════════════════════════════════════════════════════════════════════ */}
+      <Section title="Scan Summary" icon="📊">
+        {/* Stats row */}
+        <div style={{ padding: "14px 16px", borderBottom: "0.5px solid var(--border, #e5e7eb)" }}>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <StatCard label="Total"      value={stats.total}      color="var(--text1, #111827)" />
+            <StatCard label="Fraud"      value={stats.fraud}      color="#dc2626" />
+            <StatCard label="Suspicious" value={stats.suspicious} color="#d97706" />
+            <StatCard label="Safe"       value={stats.safe}       color="#16a34a" />
           </div>
-          <Toggle on={settings.autoAnalyze} onToggle={() => handleToggle("autoAnalyze")} />
         </div>
-        <div className="settings-row">
-          <div className="settings-label">
-            <strong>Data Retention</strong>
-            <span>Keep message history for {settings.dataRetention} days</span>
+
+        {/* Export button */}
+        <Row icon="📥" label="Export History" desc="Download all scan records as a CSV file" last>
+          <button
+            onClick={exportCSV}
+            disabled={stats.total === 0}
+            style={{
+              padding: "7px 16px",
+              borderRadius: "8px",
+              border: "0.5px solid var(--border, #e5e7eb)",
+              background: stats.total === 0 ? "var(--bg2, #f9fafb)" : "#6366f1",
+              color: stats.total === 0 ? "var(--text3, #9ca3af)" : "#fff",
+              fontSize: "12px",
+              fontWeight: "500",
+              cursor: stats.total === 0 ? "not-allowed" : "pointer",
+              opacity: stats.total === 0 ? 0.6 : 1,
+              transition: "all 0.2s",
+            }}
+          >
+            Export CSV
+          </button>
+        </Row>
+      </Section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          2. BACKEND API
+      ══════════════════════════════════════════════════════════════════════ */}
+      <Section title="Backend API" icon="🔌">
+
+        {/* API URL */}
+        <div
+          style={{
+            padding: "14px 16px",
+            borderBottom: "0.5px solid var(--border, #e5e7eb)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "8px",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: "13px",
+                  fontWeight: "500",
+                  color: "var(--text1, #111827)",
+                }}
+              >
+                API Server URL
+              </div>
+              <div
+                style={{
+                  fontSize: "11px",
+                  color: "var(--text3, #9ca3af)",
+                  marginTop: "2px",
+                }}
+              >
+                Your FastAPI backend address
+              </div>
+            </div>
+            <StatusBadge status={apiStatus} />
+          </div>
+
+          <div style={{ display: "flex", gap: "6px" }}>
+            <input
+              type="text"
+              value={settings.apiUrl}
+              onChange={(e) => set("apiUrl", e.target.value)}
+              placeholder="http://localhost:8000"
+              style={{
+                flex: 1,
+                padding: "9px 12px",
+                borderRadius: "8px",
+                border: "0.5px solid var(--border, #e5e7eb)",
+                background: "var(--bg2, #f9fafb)",
+                color: "var(--text1, #111827)",
+                fontSize: "13px",
+                fontFamily: "monospace",
+                outline: "none",
+              }}
+            />
+            {/* Test connection */}
+            <button
+              onClick={testConnection}
+              disabled={apiStatus === "testing"}
+              style={{
+                padding: "9px 14px",
+                borderRadius: "8px",
+                border: "0.5px solid var(--border, #e5e7eb)",
+                background: "var(--bg2, #f9fafb)",
+                color: "var(--text2, #374151)",
+                fontSize: "12px",
+                fontWeight: "500",
+                cursor: apiStatus === "testing" ? "not-allowed" : "pointer",
+                whiteSpace: "nowrap",
+                transition: "all 0.15s",
+              }}
+            >
+              {apiStatus === "testing" ? "Testing..." : "Test"}
+            </button>
+            {/* Copy URL */}
+            <button
+              onClick={() => copy(settings.apiUrl, "url")}
+              title="Copy URL"
+              style={{
+                padding: "9px 12px",
+                borderRadius: "8px",
+                border: "0.5px solid var(--border, #e5e7eb)",
+                background: copied === "url" ? "#dcfce7" : "var(--bg2, #f9fafb)",
+                color: copied === "url" ? "#166534" : "var(--text2, #374151)",
+                fontSize: "13px",
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+            >
+              {copied === "url" ? "✓" : "📋"}
+            </button>
+          </div>
+        </div>
+
+        {/* API Key */}
+        <div style={{ padding: "14px 16px" }}>
+          <div
+            style={{
+              fontSize: "13px",
+              fontWeight: "500",
+              color: "var(--text1, #111827)",
+              marginBottom: "6px",
+            }}
+          >
+            API Key
+          </div>
+          <div style={{ display: "flex", gap: "6px" }}>
+            <input
+              type={showApiKey ? "text" : "password"}
+              value={apiKeyInput}
+              onChange={(e) => {
+                setApiKeyInput(e.target.value);
+                setHasChanges(true);
+              }}
+              placeholder="Paste your API key here..."
+              style={{
+                flex: 1,
+                padding: "9px 12px",
+                borderRadius: "8px",
+                border: "0.5px solid var(--border, #e5e7eb)",
+                background: "var(--bg2, #f9fafb)",
+                color: "var(--text1, #111827)",
+                fontSize: "13px",
+                fontFamily: "monospace",
+                outline: "none",
+              }}
+            />
+            {/* Show / hide */}
+            <button
+              onClick={() => setShowApiKey((v) => !v)}
+              title={showApiKey ? "Hide key" : "Show key"}
+              style={{
+                padding: "9px 12px",
+                borderRadius: "8px",
+                border: "0.5px solid var(--border, #e5e7eb)",
+                background: "var(--bg2, #f9fafb)",
+                color: "var(--text2, #374151)",
+                fontSize: "14px",
+                cursor: "pointer",
+              }}
+            >
+              {showApiKey ? "🙈" : "👁️"}
+            </button>
+            {/* Copy key */}
+            <button
+              onClick={() => copy(apiKeyInput, "key")}
+              title="Copy API key"
+              disabled={!apiKeyInput}
+              style={{
+                padding: "9px 12px",
+                borderRadius: "8px",
+                border: "0.5px solid var(--border, #e5e7eb)",
+                background: copied === "key" ? "#dcfce7" : "var(--bg2, #f9fafb)",
+                color: copied === "key" ? "#166534" : "var(--text2, #374151)",
+                fontSize: "13px",
+                cursor: apiKeyInput ? "pointer" : "not-allowed",
+                opacity: apiKeyInput ? 1 : 0.5,
+                transition: "all 0.2s",
+              }}
+            >
+              {copied === "key" ? "✓" : "📋"}
+            </button>
+          </div>
+          <div
+            style={{
+              fontSize: "11px",
+              color: "var(--text3, #9ca3af)",
+              marginTop: "6px",
+            }}
+          >
+            Stored locally only — never sent anywhere except your API server.
+          </div>
+        </div>
+      </Section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          3. RISK THRESHOLDS
+      ══════════════════════════════════════════════════════════════════════ */}
+      <Section title="Risk Score Thresholds" icon="🎚️">
+
+        {/* Suspicious slider */}
+        <div
+          style={{
+            padding: "14px 16px",
+            borderBottom: "0.5px solid var(--border, #e5e7eb)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              marginBottom: "10px",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: "13px",
+                  fontWeight: "500",
+                  color: "var(--text1, #111827)",
+                }}
+              >
+                Suspicious threshold
+              </div>
+              <div
+                style={{
+                  fontSize: "11px",
+                  color: "var(--text3, #9ca3af)",
+                  marginTop: "2px",
+                }}
+              >
+                Scores above this show a warning
+              </div>
+            </div>
+            <span
+              style={{
+                fontSize: "22px",
+                fontWeight: "700",
+                color: "#d97706",
+                lineHeight: 1,
+              }}
+            >
+              {ST}
+            </span>
           </div>
           <input
-            type="number"
-            value={settings.dataRetention}
-            onChange={(e) =>
-              setSettings((prev) => ({
-                ...prev,
-                dataRetention: parseInt(e.target.value),
-              }))
-            }
+            type="range"
+            min={10}
+            max={FT - 5}
+            value={ST}
+            onChange={(e) => set("safeThreshold", parseInt(e.target.value))}
             style={{
-              width: "60px",
-              padding: "6px 8px",
-              background: "var(--surface2)",
-              border: "1px solid var(--border2)",
-              borderRadius: "6px",
-              color: "var(--text)",
-              outline: "none",
+              width: "100%",
+              accentColor: "#d97706",
+              cursor: "pointer",
             }}
           />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: "3px",
+            }}
+          >
+            <span style={{ fontSize: "10px", color: "var(--text3, #9ca3af)" }}>10</span>
+            <span style={{ fontSize: "10px", color: "var(--text3, #9ca3af)" }}>{FT - 5}</span>
+          </div>
         </div>
-      </div>
 
-      {/* API Key */}
-      <div>
-        <h3 style={{ fontSize: "13px", fontWeight: "700", marginBottom: "16px", color: "var(--text2)" }}>
-          API KEY
-        </h3>
-        <div className="api-key-row">
-          <div className="api-key-val">sk_live_51234567890abcdef</div>
-          <button className="copy-btn">Copy</button>
+        {/* Fraud slider */}
+        <div
+          style={{
+            padding: "14px 16px",
+            borderBottom: "0.5px solid var(--border, #e5e7eb)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              marginBottom: "10px",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: "13px",
+                  fontWeight: "500",
+                  color: "var(--text1, #111827)",
+                }}
+              >
+                Fraud threshold
+              </div>
+              <div
+                style={{
+                  fontSize: "11px",
+                  color: "var(--text3, #9ca3af)",
+                  marginTop: "2px",
+                }}
+              >
+                Scores above this are flagged as fraud
+              </div>
+            </div>
+            <span
+              style={{
+                fontSize: "22px",
+                fontWeight: "700",
+                color: "#dc2626",
+                lineHeight: 1,
+              }}
+            >
+              {FT}
+            </span>
+          </div>
+          <input
+            type="range"
+            min={ST + 5}
+            max={95}
+            value={FT}
+            onChange={(e) => set("fraudThreshold", parseInt(e.target.value))}
+            style={{
+              width: "100%",
+              accentColor: "#dc2626",
+              cursor: "pointer",
+            }}
+          />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: "3px",
+            }}
+          >
+            <span style={{ fontSize: "10px", color: "var(--text3, #9ca3af)" }}>{ST + 5}</span>
+            <span style={{ fontSize: "10px", color: "var(--text3, #9ca3af)" }}>95</span>
+          </div>
         </div>
-      </div>
+
+        {/* Live preview bar */}
+        <div
+          style={{
+            padding: "14px 16px",
+            background: "var(--bg2, #f9fafb)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "11px",
+              color: "var(--text3, #9ca3af)",
+              marginBottom: "8px",
+              fontWeight: "500",
+            }}
+          >
+            Live preview
+          </div>
+          {/* Colour bar */}
+          <div
+            style={{
+              display: "flex",
+              height: "10px",
+              borderRadius: "5px",
+              overflow: "hidden",
+              gap: "2px",
+            }}
+          >
+            <div
+              style={{
+                flex: ST,
+                background: "#16a34a",
+                borderRadius: "5px 0 0 5px",
+                transition: "flex 0.2s",
+              }}
+            />
+            <div
+              style={{
+                flex: FT - ST,
+                background: "#d97706",
+                transition: "flex 0.2s",
+              }}
+            />
+            <div
+              style={{
+                flex: 100 - FT,
+                background: "#dc2626",
+                borderRadius: "0 5px 5px 0",
+                transition: "flex 0.2s",
+              }}
+            />
+          </div>
+          {/* Zone labels */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: "8px",
+            }}
+          >
+            {[
+              { label: "Safe",       range: `0–${ST}`,       color: "#16a34a" },
+              { label: "Suspicious", range: `${ST}–${FT}`,   color: "#d97706" },
+              { label: "Fraud",      range: `${FT}–100`,     color: "#dc2626" },
+            ].map((z) => (
+              <div
+                key={z.label}
+                style={{ display: "flex", alignItems: "center", gap: "4px" }}
+              >
+                <div
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "2px",
+                    background: z.color,
+                  }}
+                />
+                <span style={{ fontSize: "10px", color: "var(--text3, #9ca3af)" }}>
+                  {z.label} ({z.range})
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          4. APPEARANCE
+      ══════════════════════════════════════════════════════════════════════ */}
+      <Section title="Appearance" icon="🎨">
+        <Row
+          icon="🌙"
+          label="Dark Mode"
+          desc="Switch between dark and light theme"
+          last
+        >
+          <Toggle
+            on={settings.darkMode}
+            onToggle={() => set("darkMode", !settings.darkMode)}
+          />
+        </Row>
+      </Section>
+
+      {/* ── Footer ── */}
+      <p
+        style={{
+          textAlign: "center",
+          fontSize: "11px",
+          color: "var(--text3, #9ca3af)",
+          margin: 0,
+        }}
+      >
+        Scam Detector v1.0.0 · All data stored locally on your device
+      </p>
+
+      {/* ── Toast ── */}
+      <Toast message={toast.message} type={toast.type} />
     </div>
   );
 }
