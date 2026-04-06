@@ -746,7 +746,6 @@ export function AnalysePage() {
               </div>
               <input
                 type="file"
-                accept=".txt,.csv,.json,.eml"
                 onChange={(e) => handleFileRead(e.target.files[0])}
                 style={{ display: "none" }}
               />
