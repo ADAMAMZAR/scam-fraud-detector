@@ -472,6 +472,12 @@ export function GlobalStyles() {
         max-width: 860px;
       }
 
+      /* Override for full-width layouts (e.g. messages master-detail) */
+      .page-body > .full-width,
+      .page-area > .full-width {
+        max-width: 100%;
+      }
+
       /* ══════════════════════════════════════════
          CARDS
       ══════════════════════════════════════════ */

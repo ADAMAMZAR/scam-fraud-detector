@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { HeatmapPanel } from "../components/HeatmapPanel";
 
 const EXAMPLES = [
   {
@@ -875,10 +876,12 @@ export function AnalysePage() {
       </div>
 
       {/* Result card */}
-       {/* Result card */}
       {result && <ResultCard result={result} />}
 
-      {/* ── PUT IT HERE ↓ ── */}
+      {/* Pressure Heatmap */}
+      {result && result.heatmap && result.heatmap.length > 0 && (
+        <HeatmapPanel heatmap={result.heatmap} />
+      )}
       <div style={{ marginTop: 48, borderTop: "1px solid var(--border)", paddingTop: 48 }}>
 
         <div style={{ textAlign: "center", marginBottom: 40 }}>

@@ -30,7 +30,7 @@ export function MessagesPage() {
   }, []);
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "16px", height: "100%" }}>
+    <div className="full-width" style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "16px", height: "calc(100vh - 120px)" }}>
       {/* Message List */}
       <div className="card" style={{ maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}>
         <div className="card-title">Recent Messages</div>

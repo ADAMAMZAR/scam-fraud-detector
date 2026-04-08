@@ -92,6 +92,6 @@ export const NAV_ITEMS = [
   { id: "analyse", label: "Analyse", icon: "🔍" },
   { id: "messages", label: "Messages", icon: "📨", badge: "6", badgeColor: "red" },
   { id: "analytics", label: "Analytics", icon: "📊" },
-  { id: "batch", label: "Batch Scan", icon: "📦" },
+  // { id: "batch", label: "Batch Scan", icon: "📦" },
   { id: "settings", label: "Settings", icon: "⚙️" },
 ];

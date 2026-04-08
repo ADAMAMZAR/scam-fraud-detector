@@ -56,11 +56,11 @@ function App() {
         { id: "download", label: "Download Report", variant: "ghost", onClick: () => {} },
       ],
     },
-    batch: {
-      title: "Batch Scan",
-      component: BatchPage,
-      actions: [],
-    },
+    // batch: {
+    //   title: "Batch Scan",
+    //   component: BatchPage,
+    //   actions: [],
+    // },
     settings: {
       title: "Settings",
       component: SettingsPage,
