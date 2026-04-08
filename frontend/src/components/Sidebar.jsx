@@ -1,19 +1,33 @@
 import { NAV_ITEMS } from "../constants/config";
 
-/**
- * Sidebar - Navigation sidebar
- */
 export function Sidebar({ activePage, onPageChange }) {
   return (
     <div className="sidebar">
-      {/* Logo */}
+      {/* Logo — NordVPN style */}
       <div className="sidebar-logo">
-        <div className="logo-mark">
-          <div className="logo-icon">🛡️</div>
-          <div>
-            <div className="logo-text">Fraud Detector</div>
-            <div className="logo-sub">AI-Powered</div>
-          </div>
+        <div className="logo-mark" style={{ gap: 10 }}>
+          <img
+            src="/logo.png"
+            alt="Fraud Detector"
+            style={{
+              width: 40,
+              height: 40,
+              objectFit: "contain",
+              flexShrink: 0,
+              filter: "drop-shadow(0 0 8px rgba(0,245,255,0.5))",
+            }}
+          />
+          <span
+            className="logo-text"
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              letterSpacing: 0.3,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Fraud Detector
+          </span>
         </div>
       </div>
 

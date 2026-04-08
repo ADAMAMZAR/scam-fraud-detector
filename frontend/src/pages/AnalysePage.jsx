@@ -875,7 +875,83 @@ export function AnalysePage() {
       </div>
 
       {/* Result card */}
+       {/* Result card */}
       {result && <ResultCard result={result} />}
-    </div>
+
+      {/* ── PUT IT HERE ↓ ── */}
+      <div style={{ marginTop: 48, borderTop: "1px solid var(--border)", paddingTop: 48 }}>
+
+        <div style={{ textAlign: "center", marginBottom: 40 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 10 }}>
+            What does Fraud Detector check?
+          </h2>
+          <p style={{ color: "var(--text2)", fontSize: 14, maxWidth: 520, margin: "0 auto" }}>
+            Paste any suspicious message, email, or link. Our AI scans it for known
+            fraud patterns, malicious URLs, and social engineering tactics instantly.
+          </p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 48 }}>
+          {[
+            { icon: "🎣", title: "Avoid phishing attacks", desc: "Got a suspicious SMS or email? Paste it here before clicking any link. We identify phishing patterns, fake sender names, and urgency manipulation used by scammers." },
+            { icon: "🚫", title: "Block fake vendors and buyers", desc: "Scammers operate on WhatsApp, email, and social media. If a buyer or seller sends something suspicious, check it here before responding or sending money." },
+          ].map((f) => (
+            <div key={f.title} className="card" style={{ padding: "24px" }}>
+              <div style={{ fontSize: 28, marginBottom: 12 }}>{f.icon}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", marginBottom: 8 }}>{f.title}</div>
+              <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7 }}>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 10 }}>
+            How does it work?
+          </h2>
+          <p style={{ color: "var(--text2)", fontSize: 14 }}>Three steps — fully automated, no data stored.</p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 48 }}>
+          {[
+            { step: "1", text: "We extract phone numbers, URLs, and email addresses from your message." },
+            { step: "2", text: "Extracted data is checked against known malicious databases and blacklists." },
+            { step: "3", text: "Our AI scans the message body for scam patterns like urgency, impersonation, and fake rewards." },
+          ].map((s) => (
+            <div key={s.step} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: "50%",
+                border: "1.5px solid var(--cyan)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--cyan)",
+              }}>
+                {s.step}
+              </div>
+              <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7 }}>{s.text}</p>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 10 }}>
+            Why use Fraud Detector?
+          </h2>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24, marginBottom: 48 }}>
+          {[
+            { title: "Works on all channels", desc: "SMS, WhatsApp, email, or any link — analyse any message on any device instantly." },
+            { title: "AI-powered analysis", desc: "Built on advanced NLP models trained on real-world scam datasets from Malaysia and globally." },
+            { title: "Your data stays private", desc: "Messages are analysed in real time and never stored. Nothing is saved after your session ends." },
+          ].map((w) => (
+            <div key={w.title}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>{w.title}</div>
+              <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7 }}>{w.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        </div>
+
+      </div>
   );
 }
