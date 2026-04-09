@@ -250,7 +250,7 @@ function Toast({ message, type }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export function SettingsPage() {
+export function SettingsPage({ globalDarkMode, setGlobalDarkMode }) {
   const [settings, setSettings]     = useState(loadSettings);
   const [apiKeyInput, setApiKeyInput] = useState(() => loadSettings().apiKey);
   const [showApiKey, setShowApiKey] = useState(false);
@@ -259,49 +259,59 @@ export function SettingsPage() {
   const [toast, setToast]           = useState({ message: "", type: "success" });
   const [history, setHistory]       = useState(loadHistory);
   const [copied, setCopied]         = useState("");   // "url" | "key" | ""
+  const [backendStats, setBackendStats] = useState({ total: 0, scams: 0, suspicious: 0, safe: 0 });
 
   // Load settings from backend on mount
   useEffect(() => {
     async function loadFromDB() {
       try {
-        const res = await fetch(`${loadSettings().apiUrl}/settings`);
+        const config = loadSettings();
+        // 1. Load Thresholds
+        const res = await fetch(`${config.apiUrl}/settings`);
         if (res.ok) {
           const data = await res.json();
           const merged = {
-            ...loadSettings(),
-            darkMode: data.dark_mode ?? true,
+            ...config,
             safeThreshold: data.safe_threshold ?? 40,
             fraudThreshold: data.fraud_threshold ?? 75,
           };
           setSettings(merged);
-          localStorage.setItem("appSettings", JSON.stringify(merged));
+          localStorage.setItem("appSettings", JSON.stringify({ ...merged, darkMode: globalDarkMode }));
+        }
+
+        // 2. Load Stats
+        const statsRes = await fetch(`${config.apiUrl}/stats`);
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          setBackendStats(statsData);
         }
       } catch { /* offline — use localStorage */ }
     }
     loadFromDB();
   }, []);
 
-  // Derived stats
+  // Derived stats (fallback to backend if loaded, otherwise use local history)
   const stats = {
-    total:      history.length,
-    fraud:      history.filter((h) => h.label === "Fraud").length,
-    suspicious: history.filter((h) => h.label === "Suspicious").length,
-    safe:       history.filter((h) => h.label === "Safe").length,
+    total:      backendStats.total || history.length,
+    fraud:      backendStats.scams || history.filter((h) => h.label === "Fraud").length,
+    suspicious: backendStats.suspicious || history.filter((h) => h.label === "Suspicious").length,
+    safe:       backendStats.safe || history.filter((h) => h.label === "Safe").length,
   };
 
-  // Auto-apply dark mode to <html> AND immediately persist to DB
-  useEffect(() => {
-    document.documentElement.setAttribute(
-      "data-theme",
-      settings.darkMode ? "dark" : "light"
-    );
+  // Theme sync to backend (was previously here, now just does the patching)
+  const toggleTheme = () => {
+    const newVal = !globalDarkMode;
+    setGlobalDarkMode(newVal);
     // Sync to backend (fire-and-forget)
     fetch(`${settings.apiUrl}/settings`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dark_mode: settings.darkMode }),
+      body: JSON.stringify({ dark_mode: newVal }),
     }).catch(() => {});
-  }, [settings.darkMode]);
+    
+    // Update localStorage
+    localStorage.setItem("appSettings", JSON.stringify({ ...settings, darkMode: newVal }));
+  };
 
   // Toast helper
   const showToast = useCallback((message, type = "success") => {
@@ -326,7 +336,7 @@ export function SettingsPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          dark_mode: final.darkMode,
+          dark_mode: globalDarkMode,
           safe_threshold: final.safeThreshold,
           fraud_threshold: final.fraudThreshold,
         }),
@@ -484,183 +494,7 @@ export function SettingsPage() {
       {/* ══════════════════════════════════════════════════════════════════════
           2. BACKEND API
       ══════════════════════════════════════════════════════════════════════ */}
-      <Section title="Backend API" icon="🔌">
-
-        {/* API URL */}
-        <div
-          style={{
-            padding: "14px 16px",
-            borderBottom: "0.5px solid var(--border, #e5e7eb)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "8px",
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: "13px",
-                  fontWeight: "500",
-                  color: "var(--text1, #111827)",
-                }}
-              >
-                API Server URL
-              </div>
-              <div
-                style={{
-                  fontSize: "11px",
-                  color: "var(--text3, #9ca3af)",
-                  marginTop: "2px",
-                }}
-              >
-                Your FastAPI backend address
-              </div>
-            </div>
-            <StatusBadge status={apiStatus} />
-          </div>
-
-          <div style={{ display: "flex", gap: "6px" }}>
-            <input
-              type="text"
-              value={settings.apiUrl}
-              onChange={(e) => set("apiUrl", e.target.value)}
-              placeholder="http://localhost:8000"
-              style={{
-                flex: 1,
-                padding: "9px 12px",
-                borderRadius: "8px",
-                border: "0.5px solid var(--border, #e5e7eb)",
-                background: "var(--bg2, #f9fafb)",
-                color: "var(--text1, #111827)",
-                fontSize: "13px",
-                fontFamily: "monospace",
-                outline: "none",
-              }}
-            />
-            {/* Test connection */}
-            <button
-              onClick={testConnection}
-              disabled={apiStatus === "testing"}
-              style={{
-                padding: "9px 14px",
-                borderRadius: "8px",
-                border: "0.5px solid var(--border, #e5e7eb)",
-                background: "var(--bg2, #f9fafb)",
-                color: "var(--text2, #374151)",
-                fontSize: "12px",
-                fontWeight: "500",
-                cursor: apiStatus === "testing" ? "not-allowed" : "pointer",
-                whiteSpace: "nowrap",
-                transition: "all 0.15s",
-              }}
-            >
-              {apiStatus === "testing" ? "Testing..." : "Test"}
-            </button>
-            {/* Copy URL */}
-            <button
-              onClick={() => copy(settings.apiUrl, "url")}
-              title="Copy URL"
-              style={{
-                padding: "9px 12px",
-                borderRadius: "8px",
-                border: "0.5px solid var(--border, #e5e7eb)",
-                background: copied === "url" ? "#dcfce7" : "var(--bg2, #f9fafb)",
-                color: copied === "url" ? "#166534" : "var(--text2, #374151)",
-                fontSize: "13px",
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-            >
-              {copied === "url" ? "✓" : "📋"}
-            </button>
-          </div>
-        </div>
-
-        {/* API Key */}
-        <div style={{ padding: "14px 16px" }}>
-          <div
-            style={{
-              fontSize: "13px",
-              fontWeight: "500",
-              color: "var(--text1, #111827)",
-              marginBottom: "6px",
-            }}
-          >
-            API Key
-          </div>
-          <div style={{ display: "flex", gap: "6px" }}>
-            <input
-              type={showApiKey ? "text" : "password"}
-              value={apiKeyInput}
-              onChange={(e) => {
-                setApiKeyInput(e.target.value);
-                setHasChanges(true);
-              }}
-              placeholder="Paste your API key here..."
-              style={{
-                flex: 1,
-                padding: "9px 12px",
-                borderRadius: "8px",
-                border: "0.5px solid var(--border, #e5e7eb)",
-                background: "var(--bg2, #f9fafb)",
-                color: "var(--text1, #111827)",
-                fontSize: "13px",
-                fontFamily: "monospace",
-                outline: "none",
-              }}
-            />
-            {/* Show / hide */}
-            <button
-              onClick={() => setShowApiKey((v) => !v)}
-              title={showApiKey ? "Hide key" : "Show key"}
-              style={{
-                padding: "9px 12px",
-                borderRadius: "8px",
-                border: "0.5px solid var(--border, #e5e7eb)",
-                background: "var(--bg2, #f9fafb)",
-                color: "var(--text2, #374151)",
-                fontSize: "14px",
-                cursor: "pointer",
-              }}
-            >
-              {showApiKey ? "🙈" : "👁️"}
-            </button>
-            {/* Copy key */}
-            <button
-              onClick={() => copy(apiKeyInput, "key")}
-              title="Copy API key"
-              disabled={!apiKeyInput}
-              style={{
-                padding: "9px 12px",
-                borderRadius: "8px",
-                border: "0.5px solid var(--border, #e5e7eb)",
-                background: copied === "key" ? "#dcfce7" : "var(--bg2, #f9fafb)",
-                color: copied === "key" ? "#166534" : "var(--text2, #374151)",
-                fontSize: "13px",
-                cursor: apiKeyInput ? "pointer" : "not-allowed",
-                opacity: apiKeyInput ? 1 : 0.5,
-                transition: "all 0.2s",
-              }}
-            >
-              {copied === "key" ? "✓" : "📋"}
-            </button>
-          </div>
-          <div
-            style={{
-              fontSize: "11px",
-              color: "var(--text3, #9ca3af)",
-              marginTop: "6px",
-            }}
-          >
-            Stored locally only — never sent anywhere except your API server.
-          </div>
-        </div>
-      </Section>
+      
 
       {/* ══════════════════════════════════════════════════════════════════════
           3. RISK THRESHOLDS
@@ -903,8 +737,8 @@ export function SettingsPage() {
           last
         >
           <Toggle
-            on={settings.darkMode}
-            onToggle={() => set("darkMode", !settings.darkMode)}
+            on={globalDarkMode}
+            onToggle={toggleTheme}
           />
         </Row>
       </Section>

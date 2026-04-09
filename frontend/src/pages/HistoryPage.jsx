@@ -5,9 +5,9 @@ import { fmtTime } from "../utils/formatters";
 import { MessageDetail } from "../components/MessageDetail";
 
 /**
- * MessagesPage - Display and filter messages
+ * HistoryPage - Display and filter scan history
  */
-export function MessagesPage() {
+export function HistoryPage() {
   const [messages, setMessages] = useState([]);
   const [selectedMsg, setSelectedMsg] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,11 +33,11 @@ export function MessagesPage() {
     <div className="full-width" style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "16px", height: "calc(100vh - 120px)" }}>
       {/* Message List */}
       <div className="card" style={{ maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}>
-        <div className="card-title">Recent Messages</div>
+        <div className="card-title">Scan History</div>
         {loading ? (
           <div style={{ padding: "20px", textAlign: "center", color: "var(--text3)" }}>Loading history...</div>
         ) : messages.length === 0 ? (
-          <div style={{ padding: "20px", textAlign: "center", color: "var(--text3)" }}>No messages found in database.</div>
+          <div style={{ padding: "20px", textAlign: "center", color: "var(--text3)" }}>No history found in database.</div>
         ) : (
           messages.map((msg) => (
             <div

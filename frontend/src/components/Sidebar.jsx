@@ -14,7 +14,6 @@ export function Sidebar({ activePage, onPageChange }) {
               height: 40,
               objectFit: "contain",
               flexShrink: 0,
-              filter: "drop-shadow(0 0 8px rgba(0,245,255,0.5))",
             }}
           />
           <span
@@ -55,7 +54,7 @@ export function Sidebar({ activePage, onPageChange }) {
       </div>
 
       {/* Footer */}
-      <div className="sidebar-footer">
+      {/* <div className="sidebar-footer">
         <div className="user-card">
           <div className="user-avatar">AD</div>
           <div>
@@ -63,7 +62,7 @@ export function Sidebar({ activePage, onPageChange }) {
             <div className="user-plan">Pro Plan</div>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

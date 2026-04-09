@@ -45,6 +45,11 @@ export function GlobalStyles() {
         --text2:        #94A3B8;
         --text3:        #4A5568;
 
+        /* Component Backgrounds */
+        --sidebar-bg:   rgba(6, 9, 18, 0.92);
+        --topbar-bg:    rgba(6, 9, 18, 0.7);
+        --logo-filter:  drop-shadow(0 0 12px rgba(0,245,255,0.6));
+
         /* Accents (legacy compat) */
         --accent:       var(--cyan);
         --accent2:      var(--purple);
@@ -86,8 +91,13 @@ export function GlobalStyles() {
         --border-active:rgba(8, 145, 178, 0.7);
 
         --text:         #0F172A;
-        --text2:        #334155;
-        --text3:        #64748B;
+        --text2:        #1E293B;
+        --text3:        #475569;
+
+        /* Component Backgrounds */
+        --sidebar-bg:   rgba(255, 255, 255, 0.95);
+        --topbar-bg:    rgba(255, 255, 255, 0.85);
+        --logo-filter:  drop-shadow(0 0 8px rgba(0,145,178,0.3));
 
         --accent:       var(--cyan);
         --accent2:      var(--purple);
@@ -169,7 +179,7 @@ export function GlobalStyles() {
         display: flex;
         flex-direction: column;
         padding: 20px 14px;
-        background: rgba(6, 9, 18, 0.92);
+        background: var(--sidebar-bg);
         backdrop-filter: blur(24px);
         -webkit-backdrop-filter: blur(24px);
         border-right: 1px solid var(--border);
@@ -204,7 +214,7 @@ export function GlobalStyles() {
 
       .logo-icon img {
         width: 42px; height: 42px;
-        filter: drop-shadow(0 0 12px rgba(0,245,255,0.6));
+        filter: var(--logo-filter);
         transition: all 0.3s ease;
         flex-shrink: 0;
       }
@@ -274,7 +284,7 @@ export function GlobalStyles() {
 
       .nav-item:hover {
         background: var(--bg-hover);
-        color: var(--text);
+        color: var(--cyan);
         border-color: var(--border);
         transform: translateX(4px);
       }
@@ -389,7 +399,7 @@ export function GlobalStyles() {
         justify-content: space-between;
         padding: 14px 28px;
         border-bottom: 1px solid var(--border);
-        background: rgba(6, 9, 18, 0.7);
+        background: var(--topbar-bg);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         flex-shrink: 0;

@@ -1,9 +1,17 @@
 /**
- * VERDICT_CONFIG - Configuration for scam verdict verdicts
+ * VERDICT_CONFIG - Configuration for scam verdicts
  */
 export const VERDICT_CONFIG = {
   SCAM: {
     label: "SCAM",
+    bg: "#FEF2F2",
+    text: "#DC2626",
+    border: "#FECACA",
+    dot: "#EF4444",
+    icon: "🚨",
+  },
+  FRAUD: {
+    label: "FRAUD",
     bg: "#FEF2F2",
     text: "#DC2626",
     border: "#FECACA",
@@ -62,6 +70,30 @@ export const TACTIC_META = {
     bg: "#FFFBEB",
     desc: "Promises unexpected rewards that require personal data or upfront fees to claim.",
   },
+  REWARD_LURE: {
+    label: "Reward Lure",
+    color: "#F59E0B",
+    bg: "#FFFBEB",
+    desc: "Promises unexpected rewards, money, or benefits to entice the victim.",
+  },
+  URGENCY_THREAT: {
+    label: "Urgency & Threat",
+    color: "#EF4444",
+    bg: "#FEF2F2",
+    desc: "Uses extreme urgency or threats of consequences to pressure immediate action.",
+  },
+  FEAR_APPEAL: {
+    label: "Fear Appeal",
+    color: "#EF4444",
+    bg: "#FEF2F2",
+    desc: "Exploits fear of loss, security breaches, or legal trouble to induce compliance.",
+  },
+  SOCIAL_PROOF: {
+    label: "Social Proof",
+    color: "#3B82F6",
+    bg: "#EFF6FF",
+    desc: "Uses fake testimonials or popularity claims to build false trust.",
+  },
   PERSONAL_DATA_REQUEST: {
     label: "Personal Data Request",
     color: "#06B6D4",
@@ -73,6 +105,12 @@ export const TACTIC_META = {
     color: "#64748B",
     bg: "#F8FAFC",
     desc: "Instructs the target to keep the interaction secret and not consult others.",
+  },
+  NEUTRAL: {
+    label: "Neutral",
+    color: "#6B7280",
+    bg: "#F9FAFB",
+    desc: "No significant fraud tactics detected in this segment.",
   },
 };
 
@@ -90,8 +128,8 @@ export const CHANNEL_ICONS = {
  */
 export const NAV_ITEMS = [
   { id: "analyse", label: "Analyse", icon: "🔍" },
-  { id: "messages", label: "Messages", icon: "📨", badge: "6", badgeColor: "red" },
+  { id: "history", label: "History", icon: "🕒", badge: "6", badgeColor: "red" },
   { id: "analytics", label: "Analytics", icon: "📊" },
-  // { id: "batch", label: "Batch Scan", icon: "📦" },
+  { id: "batch", label: "Batch Scan", icon: "📦" },
   { id: "settings", label: "Settings", icon: "⚙️" },
 ];

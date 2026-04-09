@@ -10,7 +10,8 @@ const EXAMPLES = [
   },
   {
     label: "Scam Email",
-    channel: "text",
+    channel: "email",
+    sender: "gov-relief@lottery-winner.net",
     message:
       "Congratulations! You have been selected to receive RM5,000 from the Malaysian Government Relief Fund. Click here to claim before it expires in 24 hours: bit.ly/claim-relief",
   },
@@ -484,7 +485,10 @@ export function AnalysePage() {
   const [channel,  setChannel]  = useState("text");
   const [message,  setMessage]  = useState("");
   const [url,      setUrl]      = useState("");
-  const [fileName, setFileName] = useState("");
+  const [senderEmail, setSenderEmail] = useState("");
+  const [imageFile, setImageFile]   = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [result,   setResult]   = useState(null);
   const [error,    setError]    = useState("");
@@ -494,15 +498,26 @@ export function AnalysePage() {
     setResult(null);
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: message || url,
-          channel: channel === "url" ? "url" : channel,
-          sender: channel === "url" ? url : "User Upload"
-        }),
-      });
+      let response;
+      if (channel === "image") {
+        // Multipart form-data for image upload
+        const formData = new FormData();
+        formData.append("file", imageFile);
+        response = await fetch("http://localhost:8000/analyze-image", {
+          method: "POST",
+          body: formData,
+        });
+      } else {
+        response = await fetch("http://localhost:8000/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: message || url,
+            channel: channel,
+            sender: channel === "url" ? url : (channel === "email" ? senderEmail : "User Upload")
+          }),
+        });
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -521,45 +536,36 @@ export function AnalysePage() {
   function handleExample(ex) {
     setChannel(ex.channel);
     setMessage(ex.message);
+    if (ex.channel === "url") setUrl(ex.message);
+    if (ex.channel === "email") {
+      setSenderEmail(ex.sender || "support@suspicious-bank.com");
+    }
     setResult(null);
     setError("");
   }
 
-  function handleFileRead(file) {
-  if (!file) return;
-
-  const binaryTypes = ["png", "jpg", "jpeg", "gif", "webp", "mp4", "mp3", "zip", "exe", "pdf"];
-  const ext = file.name.split(".").pop().toLowerCase();
-
-  if (binaryTypes.includes(ext)) {
-    setError(`Cannot read .${ext} files — please upload a text-based file (.txt .csv .json .eml .log .html .xml)`);
-    return;
+  function handleImageSelect(file) {
+    if (!file || !file.type.startsWith("image/")) return;
+    setImageFile(file);
+    setResult(null);
+    setError("");
+    const reader = new FileReader();
+    reader.onload = (e) => setImagePreview(e.target.result);
+    reader.readAsDataURL(file);
   }
 
-  setFileName(file.name);
-  setError("");
-  setResult(null);
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const content = e.target.result;
-    if (content.length > 10000) {
-      setMessage(content.slice(0, 10000));
-      setError("File is large — only first 10,000 characters will be analysed.");
-    } else {
-      setMessage(content);
-    }
-  };
-  reader.onerror = () => {
-    setError("Could not read file — make sure it is a text-based file.");
-    setFileName("");
-  };
-  reader.readAsText(file);
-}
+  function handleDrop(e) {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    handleImageSelect(file);
+  }
 
   const canAnalyse =
     (channel === "url" && url.trim()) ||
-    (channel !== "url" && message.trim());
+    (channel === "email" && senderEmail.trim() && message.trim()) ||
+    (channel === "text" && message.trim()) ||
+    (channel === "image" && imageFile !== null);
 
   return (
     <div style={{ maxWidth: "680px", margin: "0 auto" }}>
@@ -627,9 +633,10 @@ export function AnalysePage() {
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
             {[
-              { id: "text", icon: "✏️", label: "Text"  },
-              { id: "file", icon: "📁", label: "File"  },
-              { id: "url",  icon: "🔗", label: "URL"   },
+              { id: "text",  icon: "✏️", label: "Text"  },
+              { id: "email", icon: "📧", label: "Email" },
+              { id: "url",   icon: "🔗", label: "URL"   },
+              { id: "image", icon: "🖼️", label: "Image" },
             ].map((ch) => (
               <button
                 key={ch.id}
@@ -637,7 +644,9 @@ export function AnalysePage() {
                   setChannel(ch.id);
                   setMessage("");
                   setUrl("");
-                  setFileName("");
+                  setSenderEmail("");
+                  setImageFile(null);
+                  setImagePreview(null);
                   setResult(null);
                 }}
                 style={{
@@ -728,7 +737,7 @@ export function AnalysePage() {
           </div>
         )}
 
-        {/* File */}
+        {/* File
         {channel === "file" && (
           <div style={{ marginBottom: "20px" }}>
             <span
@@ -793,7 +802,7 @@ export function AnalysePage() {
               />
             )}
           </div>
-        )}
+        )} */}
 
         {/* URL */}
         {channel === "url" && (
@@ -830,6 +839,200 @@ export function AnalysePage() {
             <div style={{ fontSize: "11px", color: "#9CA3AF", marginTop: "6px" }}>
               Checks domain age, blacklist, and redirect chains
             </div>
+          </div>
+        )}
+
+        {/* Image */}
+        {channel === "image" && (
+          <div style={{ marginBottom: "20px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <span style={{ fontSize: "11px", fontWeight: "700", letterSpacing: "0.06em", color: "#6B7280" }}>
+                UPLOAD SCREENSHOT
+              </span>
+              {imageFile && (
+                <button
+                  onClick={() => { setImageFile(null); setImagePreview(null); setResult(null); }}
+                  style={{ fontSize: "11px", color: "#9CA3AF", background: "none", border: "none", cursor: "pointer", fontWeight: "500" }}
+                >
+                  ✕ Clear
+                </button>
+              )}
+            </div>
+
+            {/* Drag & Drop Zone */}
+            <div
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
+              style={{
+                border: `2px dashed ${isDragging ? "#6366F1" : imageFile ? "#6366F1" : "#D1D5DB"}`,
+                borderRadius: "14px",
+                padding: imagePreview ? "12px" : "40px 20px",
+                textAlign: "center",
+                background: isDragging ? "#EEF2FF" : imageFile ? "#F5F3FF" : "#FAFAFA",
+                transition: "all 0.2s",
+                cursor: "pointer",
+                position: "relative",
+              }}
+              onClick={() => !imageFile && document.getElementById("img-upload-input").click()}
+            >
+              {imagePreview ? (
+                /* Preview */
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "16px", textAlign: "left" }}>
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    style={{
+                      width: "120px",
+                      height: "120px",
+                      objectFit: "cover",
+                      borderRadius: "10px",
+                      border: "1px solid #E5E7EB",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div style={{ flex: 1, paddingTop: "4px" }}>
+                    <div style={{ fontSize: "13px", fontWeight: "600", color: "#111827", marginBottom: "4px", wordBreak: "break-all" }}>
+                      {imageFile.name}
+                    </div>
+                    <div style={{ fontSize: "11px", color: "#6B7280", marginBottom: "10px" }}>
+                      {(imageFile.size / 1024).toFixed(1)} KB · {imageFile.type}
+                    </div>
+                    <div style={{ fontSize: "11px", color: "#6366F1", fontWeight: "500" }}>
+                      ✓ Ready to scan
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Empty state */
+                <>
+                  <div style={{ fontSize: "40px", marginBottom: "12px" }}>📷</div>
+                  <div style={{ fontSize: "14px", fontWeight: "600", color: "#374151", marginBottom: "6px" }}>
+                    {isDragging ? "Drop your screenshot here" : "Drag & drop a screenshot"}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#9CA3AF", marginBottom: "16px" }}>
+                    WhatsApp, SMS, Email — JPG, PNG, WEBP supported
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); document.getElementById("img-upload-input").click(); }}
+                    style={{
+                      padding: "9px 20px",
+                      borderRadius: "8px",
+                      border: "1.5px solid #6366F1",
+                      background: "#EEF2FF",
+                      color: "#4338CA",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Browse Files
+                  </button>
+                </>
+              )}
+              <input
+                id="img-upload-input"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => handleImageSelect(e.target.files[0])}
+                style={{ display: "none" }}
+              />
+            </div>
+            <div style={{ fontSize: "11px", color: "#9CA3AF", marginTop: "6px" }}>
+              Gemini Vision will extract text and analyze the screenshot for scam indicators
+            </div>
+          </div>
+        )}
+
+        {/* Email */}
+        {channel === "email" && (
+          <div style={{ marginBottom: "20px" }}>
+            <div style={{ marginBottom: "16px" }}>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: "700",
+                  letterSpacing: "0.06em",
+                  color: "#6B7280",
+                  display: "block",
+                  marginBottom: "8px",
+                }}
+              >
+                SENDER EMAIL
+              </span>
+              <input
+                type="email"
+                value={senderEmail}
+                onChange={(e) => { setSenderEmail(e.target.value); setResult(null); }}
+                placeholder="e.g. support@verify-security.com"
+                style={{
+                  width: "100%",
+                  padding: "12px 14px",
+                  borderRadius: "10px",
+                  border: "1.5px solid #E5E7EB",
+                  background: "#F9FAFB",
+                  color: "#111827",
+                  fontSize: "14px",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "8px",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: "700",
+                  letterSpacing: "0.06em",
+                  color: "#6B7280",
+                }}
+              >
+                EMAIL CONTENT
+              </span>
+              {message && (
+                <button
+                  onClick={() => { setMessage(""); setResult(null); }}
+                  style={{
+                    fontSize: "11px",
+                    color: "#9CA3AF",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontWeight: "500",
+                  }}
+                >
+                  ✕ Clear
+                </button>
+              )}
+            </div>
+            <textarea
+              value={message}
+              onChange={(e) => { setMessage(e.target.value); setResult(null); }}
+              placeholder="Paste the email body here..."
+              rows={5}
+              style={{
+                width: "100%",
+                padding: "12px 14px",
+                borderRadius: "10px",
+                border: "1.5px solid #E5E7EB",
+                background: "#F9FAFB",
+                color: "#111827",
+                fontSize: "14px",
+                resize: "vertical",
+                fontFamily: "inherit",
+                lineHeight: "1.6",
+                outline: "none",
+                boxSizing: "border-box",
+              }}
+            />
           </div>
         )}
 
@@ -903,17 +1106,17 @@ export function AnalysePage() {
       {result && result.heatmap && result.heatmap.length > 0 && (
         <HeatmapPanel heatmap={result.heatmap} />
       )}
-      <div style={{ marginTop: 48, borderTop: "1px solid var(--border)", paddingTop: 48 }}>
-
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 10 }}>
-            What does Fraud Detector analyse?
-          </h2>
-          <p style={{ color: "var(--text2)", fontSize: 14, maxWidth: 520, margin: "0 auto" }}>
-            Built for Malaysian users — paste any suspicious SMS, WhatsApp message, email, or link.
-            Our AI detects scam patterns used by local and international fraudsters instantly.
-          </p>
-        </div>
+      {!loading && !result && (
+        <div style={{ marginTop: 48, borderTop: "1px solid var(--border)", paddingTop: 48 }}>
+          <div style={{ textAlign: "center", marginBottom: 40 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 10 }}>
+              What does Fraud Detector analyse?
+            </h2>
+            <p style={{ color: "var(--text2)", fontSize: 14, maxWidth: 520, margin: "0 auto" }}>
+              Built for Malaysian users — paste any suspicious SMS, WhatsApp message, email, or link.
+              Our AI detects scam patterns used by local and international fraudsters instantly.
+            </p>
+          </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 48 }}>
           {[
@@ -936,40 +1139,40 @@ export function AnalysePage() {
           ))}
         </div>
 
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 10 }}>
-            How does it work?
-          </h2>
-          <p style={{ color: "var(--text2)", fontSize: 14 }}>
+          <div style={{ textAlign: "center", marginBottom: 32 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 10 }}>
+              How does it work?
+            </h2>
+            <p style={{ color: "var(--text2)", fontSize: 14 }}>
             Powered by Gemini AI — three steps, real-time results.
           </p>
-        </div>
+          </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 48 }}>
-          {[
-            { step: "1", text: "Paste your message, upload a file (.txt .csv .json .eml), or enter a suspicious URL into the analyser above." },
-            { step: "2", text: "Our AI analyses the message structure, language patterns, URLs, and sender context to identify fraud indicators." },
-            { step: "3", text: "You get a risk score from 0–100, a verdict (Safe / Suspicious / Fraud), and a full breakdown of exactly why it was flagged." },
-          ].map((s) => (
-            <div key={s.step} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: "50%",
-                border: "1.5px solid var(--cyan)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--cyan)",
-              }}>
-                {s.step}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 48 }}>
+            {[
+              { step: "1", text: "Paste your message, enter a sender email, or enter a suspicious URL into the analyser above." },
+              { step: "2", text: "Our AI analyses the message structure, language patterns, URLs, and sender context to identify fraud indicators." },
+              { step: "3", text: "You get a risk score from 0–100, a verdict (Safe / Suspicious / Fraud), and a full breakdown of exactly why it was flagged." },
+            ].map((s) => (
+              <div key={s.step} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: "50%",
+                  border: "1.5px solid var(--cyan)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--cyan)",
+                }}>
+                  {s.step}
+                </div>
+                <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7 }}>{s.text}</p>
               </div>
-              <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7 }}>{s.text}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 10 }}>
-            Why use Fraud Detector?
-          </h2>
-        </div>
+          <div style={{ textAlign: "center", marginBottom: 32 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 10 }}>
+              Why use Fraud Detector?
+            </h2>
+          </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24, marginBottom: 48 }}>
           {[
@@ -994,7 +1197,7 @@ export function AnalysePage() {
         </div>
 
         </div>
-
-      </div>
+      )}
+    </div>
   );
 }

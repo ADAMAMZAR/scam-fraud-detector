@@ -71,9 +71,9 @@ export function MessageDetail({ msg }) {
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
-          <VerdictBadge verdict={msg.verdict} />
+          < VerdictBadge verdict={msg.verdict} />
           <span style={{ fontSize: "24px", fontWeight: "800", fontFamily: "var(--font-display)" }}>
-            {(msg.scam_score * 100).toFixed(0)}%
+            {((msg.scam_score ?? (msg.score > 1 ? msg.score / 100 : msg.score)) * 100).toFixed(0)}%
           </span>
         </div>
       </div>
@@ -83,7 +83,10 @@ export function MessageDetail({ msg }) {
         <div style={{ fontSize: "11px", color: "var(--text3)", marginBottom: "8px", fontWeight: "600" }}>
           SCAM SCORE
         </div>
-        <ScoreBar score={msg.scam_score} verdict={msg.verdict} />
+        <ScoreBar 
+          score={msg.scam_score ?? (msg.score > 1 ? msg.score / 100 : msg.score)} 
+          verdict={msg.verdict} 
+        />
       </div>
 
       {/* Message Body */}
@@ -170,8 +173,9 @@ export function MessageDetail({ msg }) {
             {msg.heatmap.map((item, idx) => (
               <HeatSentence
                 key={idx}
-                sentence={item.sentence}
+                 sentence={item.sentence}
                 tactics={item.tactics}
+                tactic={item.tactic}
                 intensity={item.intensity}
                 delay={idx * 30}
               />

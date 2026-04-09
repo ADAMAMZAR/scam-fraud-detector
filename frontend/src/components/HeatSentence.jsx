@@ -5,11 +5,14 @@ import { intensityToColor } from "../utils/formatters";
 /**
  * HeatSentence - Individual sentence with tactic highlighting
  */
-export function HeatSentence({ sentence, tactics, intensity, delay = 0 }) {
+export function HeatSentence({ sentence, tactics, tactic, intensity, delay = 0 }) {
   const [hovered, setHovered] = useState(false);
   const ref = useRef();
   const bg = intensityToColor(intensity);
-  const mainTactic = tactics[0];
+  
+  // Handle both plural 'tactics' (array) and singular 'tactic' (string)
+  const normalizedTactics = Array.isArray(tactics) ? tactics : (tactic ? [tactic] : []);
+  const mainTactic = normalizedTactics[0];
   const meta = mainTactic ? TACTIC_META[mainTactic] : null;
 
   return (

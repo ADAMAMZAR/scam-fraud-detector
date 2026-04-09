@@ -3,7 +3,7 @@ import { Sidebar } from "./components/Sidebar";
 import { Topbar } from "./components/Topbar";
 import { GlobalStyles } from "./components/GlobalStyles";
 import { AnalysePage } from "./pages/AnalysePage";
-import { MessagesPage } from "./pages/MessagesPage";
+import { HistoryPage } from "./pages/HistoryPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { BatchPage } from "./pages/BatchPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -12,7 +12,18 @@ import { SettingsPage } from "./pages/SettingsPage";
  * App Root Component
  * Main application shell with routing and layout
  */
-const VALID_PAGES = ["analyse", "messages", "analytics", "batch", "settings"];
+
+function getInitialTheme() {
+  try {
+    const saved = localStorage.getItem("appSettings");
+    if (!saved) return true; // Default Dark
+    const { darkMode } = JSON.parse(saved);
+    return darkMode ?? true;
+  } catch {
+    return true;
+  }
+}
+const VALID_PAGES = ["analyse", "history", "analytics", "batch", "settings"];
 
 function getPageFromHash() {
   const hash = window.location.hash.replace("#", "");
@@ -21,6 +32,12 @@ function getPageFromHash() {
 
 function App() {
   const [activePage, setActivePage] = useState(getPageFromHash);
+  const [darkMode, setDarkMode] = useState(getInitialTheme);
+
+  // Apply theme immediately
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", darkMode ? "dark" : "light");
+  }, [darkMode]);
 
   // Keep URL hash in sync with active page
   useEffect(() => {
@@ -41,9 +58,9 @@ function App() {
       component: AnalysePage,
       actions: [],
     },
-    messages: {
-      title: "Messages",
-      component: MessagesPage,
+    history: {
+      title: "History",
+      component: HistoryPage,
     
     },
     analytics: {
@@ -51,15 +68,19 @@ function App() {
       component: AnalyticsPage,
   
     },
-    // batch: {
-    //   title: "Batch Scan",
-    //   component: BatchPage,
-    //   actions: [],
-    // },
+    batch: {
+      title: "Batch Scan",
+      component: BatchPage,
+      actions: [],
+    },
     settings: {
       title: "Settings",
-      component: SettingsPage,
-    
+      component: () => (
+        <SettingsPage 
+          globalDarkMode={darkMode} 
+          setGlobalDarkMode={setDarkMode} 
+        />
+      ),
     },
   };
 
