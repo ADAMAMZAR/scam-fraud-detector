@@ -44,17 +44,12 @@ function App() {
     messages: {
       title: "Messages",
       component: MessagesPage,
-      actions: [
-        { id: "refresh", label: "Refresh", variant: "ghost", onClick: () => {} },
-        { id: "export", label: "Export", variant: "primary", onClick: () => {} },
-      ],
+    
     },
     analytics: {
       title: "Analytics",
       component: AnalyticsPage,
-      actions: [
-        { id: "download", label: "Download Report", variant: "ghost", onClick: () => {} },
-      ],
+  
     },
     // batch: {
     //   title: "Batch Scan",
@@ -64,9 +59,7 @@ function App() {
     settings: {
       title: "Settings",
       component: SettingsPage,
-      actions: [
-        { id: "save", label: "Save Settings", variant: "primary", onClick: () => {} },
-      ],
+    
     },
   };
 

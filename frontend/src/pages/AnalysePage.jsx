@@ -526,12 +526,36 @@ export function AnalysePage() {
   }
 
   function handleFileRead(file) {
-    if (!file) return;
-    setFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (e) => setMessage(e.target.result);
-    reader.readAsText(file);
+  if (!file) return;
+
+  const binaryTypes = ["png", "jpg", "jpeg", "gif", "webp", "mp4", "mp3", "zip", "exe", "pdf"];
+  const ext = file.name.split(".").pop().toLowerCase();
+
+  if (binaryTypes.includes(ext)) {
+    setError(`Cannot read .${ext} files — please upload a text-based file (.txt .csv .json .eml .log .html .xml)`);
+    return;
   }
+
+  setFileName(file.name);
+  setError("");
+  setResult(null);
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const content = e.target.result;
+    if (content.length > 10000) {
+      setMessage(content.slice(0, 10000));
+      setError("File is large — only first 10,000 characters will be analysed.");
+    } else {
+      setMessage(content);
+    }
+  };
+  reader.onerror = () => {
+    setError("Could not read file — make sure it is a text-based file.");
+    setFileName("");
+  };
+  reader.readAsText(file);
+}
 
   const canAnalyse =
     (channel === "url" && url.trim()) ||
@@ -741,9 +765,6 @@ export function AnalysePage() {
                 }}
               >
                 {fileName || "Click to upload"}
-              </div>
-              <div style={{ fontSize: "11px", color: "#9CA3AF" }}>
-                .txt · .csv · .json · .eml
               </div>
               <input
                 type="file"
