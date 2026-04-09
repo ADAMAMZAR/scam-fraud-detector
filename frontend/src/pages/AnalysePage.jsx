@@ -584,7 +584,7 @@ export function AnalysePage() {
 
       {/* ── Input card ── */}
       <div className="card">
-        <h2 style={{ marginBottom: "20px", color: "#111827" }}>
+        <h2 style={{ marginBottom: "20px", color: "#81bee9" }}>
           Analyse Message
         </h2>
 
@@ -886,18 +886,26 @@ export function AnalysePage() {
 
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 10 }}>
-            What does Fraud Detector check?
+            What does Fraud Detector analyse?
           </h2>
           <p style={{ color: "var(--text2)", fontSize: 14, maxWidth: 520, margin: "0 auto" }}>
-            Paste any suspicious message, email, or link. Our AI scans it for known
-            fraud patterns, malicious URLs, and social engineering tactics instantly.
+            Built for Malaysian users — paste any suspicious SMS, WhatsApp message, email, or link.
+            Our AI detects scam patterns used by local and international fraudsters instantly.
           </p>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 48 }}>
           {[
-            { icon: "🎣", title: "Avoid phishing attacks", desc: "Got a suspicious SMS or email? Paste it here before clicking any link. We identify phishing patterns, fake sender names, and urgency manipulation used by scammers." },
-            { icon: "🚫", title: "Block fake vendors and buyers", desc: "Scammers operate on WhatsApp, email, and social media. If a buyer or seller sends something suspicious, check it here before responding or sending money." },
+            {
+              icon: "🏦",
+              title: "Bank impersonation scams",
+              desc: "Fake messages pretending to be Maybank, CIMB, RHB, or Bank Negara asking you to verify your account or click a suspicious link. We catch these immediately.",
+            },
+            {
+              icon: "🎁",
+              title: "Fake government & reward schemes",
+              desc: "Scammers impersonate LHDN, KWSP, PDRM, or government relief funds offering fake cash rewards. Our AI flags urgency tactics and fake official language.",
+            },
           ].map((f) => (
             <div key={f.title} className="card" style={{ padding: "24px" }}>
               <div style={{ fontSize: 28, marginBottom: 12 }}>{f.icon}</div>
@@ -911,14 +919,16 @@ export function AnalysePage() {
           <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 10 }}>
             How does it work?
           </h2>
-          <p style={{ color: "var(--text2)", fontSize: 14 }}>Three steps — fully automated, no data stored.</p>
+          <p style={{ color: "var(--text2)", fontSize: 14 }}>
+            Powered by Gemini AI — three steps, real-time results.
+          </p>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 48 }}>
           {[
-            { step: "1", text: "We extract phone numbers, URLs, and email addresses from your message." },
-            { step: "2", text: "Extracted data is checked against known malicious databases and blacklists." },
-            { step: "3", text: "Our AI scans the message body for scam patterns like urgency, impersonation, and fake rewards." },
+            { step: "1", text: "Paste your message, upload a file (.txt .csv .json .eml), or enter a suspicious URL into the analyser above." },
+            { step: "2", text: "Our AI analyses the message structure, language patterns, URLs, and sender context to identify fraud indicators." },
+            { step: "3", text: "You get a risk score from 0–100, a verdict (Safe / Suspicious / Fraud), and a full breakdown of exactly why it was flagged." },
           ].map((s) => (
             <div key={s.step} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{
@@ -942,9 +952,18 @@ export function AnalysePage() {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24, marginBottom: 48 }}>
           {[
-            { title: "Works on all channels", desc: "SMS, WhatsApp, email, or any link — analyse any message on any device instantly." },
-            { title: "AI-powered analysis", desc: "Built on advanced NLP models trained on real-world scam datasets from Malaysia and globally." },
-            { title: "Your data stays private", desc: "Messages are analysed in real time and never stored. Nothing is saved after your session ends." },
+            {
+              title: "Built for Malaysia",
+              desc: "Designed to recognise local scam patterns — Maybank phishing, LHDN impersonation, Shopee/Lazada fake sellers, and Malaysian phone number fraud.",
+            },
+            {
+              title: "AI explainability",
+              desc: "Every result includes a risk score, confidence level, and the exact reasons why the message was flagged — not just a verdict, but a full breakdown you can act on.",
+            },
+            {
+              title: "Your scans are saved",
+              desc: "Every scan is saved to your history so you can review past results, track patterns, and export records anytime from the Messages page.",
+            },
           ].map((w) => (
             <div key={w.title}>
               <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>{w.title}</div>

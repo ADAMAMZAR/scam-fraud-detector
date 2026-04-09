@@ -278,7 +278,7 @@ export function AnalyticsPage() {
                   position: "relative", marginTop: "-165px", textAlign: "center",
                   pointerEvents: "none", marginBottom: "120px",
                 }}>
-                  <div style={{ fontSize: "22px", fontWeight: "800", color: "#111827" }}>
+                  <div style={{ fontSize: "22px", fontWeight: "800", color: "#8aa9ee" }}>
                     {data.total}
                   </div>
                   <div style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: "600" }}>
