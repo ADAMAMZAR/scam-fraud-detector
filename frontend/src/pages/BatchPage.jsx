@@ -146,12 +146,13 @@ const inputStyle = {
   width: "100%",
   padding: "9px 12px",
   borderRadius: "8px",
-  border: "1px solid var(--border, #E5E7EB)",
-  background: "var(--bg2, #F9FAFB)",
-  color: "var(--text, #111827)",
+  border: "1px solid var(--border)",
+  background: "var(--bg-input)",
+  color: "var(--text)",
   fontSize: "13px",
   outline: "none",
   boxSizing: "border-box",
+  fontFamily: "var(--font-ui)",
 };
 
 // ─── Result Row ───────────────────────────────────────────────────────────────
@@ -579,13 +580,14 @@ export function BatchPage() {
           </div>
         ) : (
           <button
-            onClick={runScan}
-            disabled={!canScan}
-            className="analyse-btn"
-            style={{ opacity: canScan ? 1 : 0.4, cursor: canScan ? "pointer" : "not-allowed" }}
-          >
-            ▶ Run Batch Scan ({totalItems} {totalItems === 1 ? "item" : "items"})
-          </button>
+          type="button"
+          onClick={runScan}
+          disabled={!canScan}
+          className="analyse-btn"
+          style={{ opacity: canScan ? 1 : 0.4, cursor: canScan ? "pointer" : "not-allowed" }}
+        >
+          ▶ Run Batch Scan ({totalItems} {totalItems === 1 ? "item" : "items"})
+        </button>
         )}
       </div>
 
