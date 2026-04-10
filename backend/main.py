@@ -1,6 +1,8 @@
 import os
-from fastapi import FastAPI, HTTPException, Body, UploadFile, File
+import uuid
+from fastapi import FastAPI, HTTPException, Body, UploadFile, File, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timedelta, timezone
@@ -8,6 +10,7 @@ from collections import defaultdict
 from dotenv import load_dotenv
 import csv
 import io
+import json
 
 # Local Imports
 from supabase_client import supabase
@@ -51,6 +54,10 @@ class BatchItem(BaseModel):
 
 class BatchRequest(BaseModel):
     items: List[BatchItem]
+
+class AsyncBatchRequest(BaseModel):
+    items: List[BatchItem]
+    file_name: Optional[str] = None
 
 # ─── API Routes ──────────────────────────────────────────────────────────────
 
@@ -183,6 +190,184 @@ async def batch_analyze(request: BatchRequest):
                 "verdict": "ERROR",
             })
     return {"total": len(results), "results": results}
+
+# ─── Async Batch Endpoints ────────────────────────────────────────────────────
+
+async def _run_batch_job(job_id: str, items: list):
+    """
+    Background task: processes each item in the batch, updating the job
+    record in Supabase after every item so the frontend can poll progress.
+    """
+    total = len(items)
+    completed = 0
+    failed = 0
+    results = []
+
+    # Mark as processing
+    supabase.table("batch_jobs").update({
+        "status": "processing",
+        "total": total,
+    }).eq("id", job_id).execute()
+
+    for idx, item in enumerate(items):
+        # Check for cancellation
+        job_row = supabase.table("batch_jobs").select("status").eq("id", job_id).execute()
+        if job_row.data and job_row.data[0]["status"] == "cancelled":
+            break
+
+        try:
+            analysis = AIService.analyze_message(
+                item["message"],
+                channel=item.get("channel", "text"),
+                sender=item.get("sender") or "Batch Upload"
+            )
+            scan_data = {
+                "message_body": item["message"][:500],
+                "channel":      item.get("channel", "text"),
+                "sender":       item.get("sender"),
+                "score":        analysis["score"],
+                "verdict":      analysis["verdict"].upper(),
+                "confidence":   analysis["confidence"],
+                "nlp_score":    analysis["breakdown"].get("NLP", 0),
+                "url_score":    analysis["breakdown"].get("URL", 0),
+                "sender_score": analysis["breakdown"].get("Sender", 0),
+                "heatmap":      analysis.get("heatmap", []),
+            }
+            result = supabase.table("scans").insert(scan_data).execute()
+            scan_id = result.data[0]["id"] if result.data else None
+
+            if analysis.get("reasons") and scan_id:
+                reasons_data = [
+                    {"scan_id": scan_id, "text": r["text"], "category": r["category"], "points": r["points"]}
+                    for r in analysis["reasons"]
+                ]
+                supabase.table("scan_reasons").insert(reasons_data).execute()
+
+            results.append({
+                "index":      idx,
+                "id":         scan_id,
+                "message":    item["message"][:120],
+                "channel":    item.get("channel", "text"),
+                "sender":     item.get("sender"),
+                "score":      analysis["score"],
+                "verdict":    analysis["verdict"].upper(),
+                "confidence": analysis["confidence"],
+                "breakdown":  analysis.get("breakdown", {}),
+                "reasons":    analysis.get("reasons", []),
+            })
+            completed += 1
+
+        except Exception as e:
+            results.append({
+                "index":   idx,
+                "message": item["message"][:120],
+                "channel": item.get("channel", "text"),
+                "verdict": "ERROR",
+                "score":   0,
+                "error":   str(e)[:200],
+            })
+            failed += 1
+
+        # Update progress after every item
+        supabase.table("batch_jobs").update({
+            "completed":    completed,
+            "failed_count": failed,
+        }).eq("id", job_id).execute()
+
+    # Final update
+    final_status = "complete"
+    job_row = supabase.table("batch_jobs").select("status").eq("id", job_id).execute()
+    if job_row.data and job_row.data[0]["status"] == "cancelled":
+        final_status = "cancelled"
+
+    supabase.table("batch_jobs").update({
+        "status":       final_status,
+        "completed":    completed,
+        "failed_count": failed,
+        "results_json": results,
+    }).eq("id", job_id).execute()
+
+
+@app.post("/v1/analyse/batch")
+async def async_batch_analyse(
+    request: AsyncBatchRequest,
+    background_tasks: BackgroundTasks,
+):
+    """
+    Creates a batch job and starts processing in the background.
+    Returns job_id immediately — frontend polls GET /v1/jobs/{job_id}.
+    """
+    if not request.items:
+        raise HTTPException(status_code=400, detail="No items provided.")
+    if len(request.items) > 200:
+        raise HTTPException(status_code=400, detail="Max 200 items per batch.")
+
+    # Create job record in Supabase
+    job_data = {
+        "status":     "queued",
+        "total":      len(request.items),
+        "completed":  0,
+        "file_name":  request.file_name,
+    }
+    result = supabase.table("batch_jobs").insert(job_data).execute()
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Failed to create job record.")
+
+    job_id = result.data[0]["id"]
+
+    # Serialise items for the background task (Pydantic → plain dicts)
+    items_dict = [{"message": it.message, "channel": it.channel, "sender": it.sender}
+                  for it in request.items]
+
+    # Fire the background task
+    background_tasks.add_task(_run_batch_job, job_id, items_dict)
+
+    return {
+        "job_id":    job_id,
+        "total":     len(request.items),
+        "status":    "queued",
+    }
+
+
+@app.get("/v1/jobs/{job_id}")
+async def get_job_status(job_id: str):
+    """
+    Returns current status of a batch job.
+    Frontend polls this every ~2s until status == 'complete' or 'failed'.
+    """
+    try:
+        result = supabase.table("batch_jobs").select("*").eq("id", job_id).execute()
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Job not found.")
+        job = result.data[0]
+        return {
+            "job_id":      job["id"],
+            "status":      job["status"],           # queued|processing|complete|failed|cancelled
+            "total":       job["total"],
+            "completed":   job["completed"],
+            "failed":      job["failed_count"],
+            "results":     job.get("results_json") or [],
+            "created_at":  job["created_at"],
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/v1/jobs/{job_id}/cancel")
+async def cancel_job(job_id: str):
+    """
+    Signals the background task to stop after the current item.
+    """
+    result = supabase.table("batch_jobs").select("status").eq("id", job_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Job not found.")
+    current = result.data[0]["status"]
+    if current in ("complete", "failed", "cancelled"):
+        raise HTTPException(status_code=400, detail=f"Job already {current}.")
+    supabase.table("batch_jobs").update({"status": "cancelled"}).eq("id", job_id).execute()
+    return {"ok": True, "job_id": job_id, "status": "cancelled"}
 
 @app.post("/parse-file")
 async def parse_file(file: UploadFile = File(...)):

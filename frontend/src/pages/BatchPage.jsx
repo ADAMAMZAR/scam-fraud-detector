@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -20,6 +20,48 @@ function newRow(id) {
 }
 
 let nextId = 1;
+
+// Format elapsed seconds as "1m 23s" or "45s"
+function fmtElapsed(seconds) {
+  if (seconds < 60) return `${seconds}s`;
+  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+}
+
+// Format estimated time remaining
+function fmtEta(completed, total, elapsedMs) {
+  if (completed === 0) return null;
+  const msPerItem = elapsedMs / completed;
+  const remaining = Math.round(((total - completed) * msPerItem) / 1000);
+  if (remaining < 5) return "almost done";
+  if (remaining < 60) return `~${remaining}s`;
+  return `~${Math.floor(remaining / 60)}m ${remaining % 60}s`;
+}
+
+// Download results as CSV
+function downloadCsv(results, fileName) {
+  const headers = ["#", "Message", "Channel", "Sender", "Verdict", "Score", "Confidence", "NLP", "URL", "Sender Score", "Reasons"];
+  const rows = results.map((r) => [
+    r.index + 1,
+    `"${(r.message || "").replace(/"/g, '""')}"`,
+    r.channel || "",
+    r.sender || "",
+    r.verdict || "",
+    r.score ?? "",
+    r.confidence ?? "",
+    r.breakdown?.NLP ?? "",
+    r.breakdown?.URL ?? "",
+    r.breakdown?.Sender ?? "",
+    `"${(r.reasons || []).map(x => x.text).join("; ").replace(/"/g, '""')}"`,
+  ]);
+  const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName || "batch-results.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -55,6 +97,78 @@ function ChannelPill({ channel }) {
     <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "10px", background: bg, color, fontWeight: "600" }}>
       {icon} {channel}
     </span>
+  );
+}
+
+// ─── Progress Bar ─────────────────────────────────────────────────────────────
+
+function ProgressBar({ completed, total, elapsedMs, onCancel }) {
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const elapsedSec = Math.round(elapsedMs / 1000);
+  const eta = fmtEta(completed, total, elapsedMs);
+
+  return (
+    <div style={{ padding: "20px 0" }}>
+      {/* Header row */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+        <div>
+          <span style={{ fontSize: "14px", fontWeight: "700", color: "var(--text, #111827)" }}>
+            Processing {total} {total === 1 ? "message" : "messages"}
+          </span>
+          <span style={{
+            marginLeft: "10px", fontSize: "12px", color: "var(--cyan, #6366F1)",
+            fontWeight: "600", fontFamily: "monospace",
+          }}>
+            {completed} / {total}
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {eta && (
+            <span style={{ fontSize: "12px", color: "var(--text3, #6B7280)" }}>
+              ⏱ {eta} remaining
+            </span>
+          )}
+          <span style={{ fontSize: "12px", color: "var(--text3, #9CA3AF)" }}>
+            {fmtElapsed(elapsedSec)} elapsed
+          </span>
+        </div>
+      </div>
+
+      {/* Progress track */}
+      <div style={{
+        height: "10px", borderRadius: "5px",
+        background: "var(--border, #E5E7EB)", overflow: "hidden",
+        marginBottom: "8px",
+      }}>
+        <div style={{
+          height: "100%", borderRadius: "5px",
+          width: `${pct}%`,
+          background: "linear-gradient(90deg, #6366F1 0%, #8B5CF6 100%)",
+          transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)",
+          boxShadow: "0 0 8px rgba(99,102,241,0.4)",
+        }} />
+      </div>
+
+      {/* Percentage + cancel */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--cyan, #6366F1)" }}>
+          {pct}%
+        </span>
+        <button
+          onClick={onCancel}
+          style={{
+            fontSize: "12px", padding: "6px 14px", borderRadius: "8px",
+            border: "1.5px solid #EF4444", background: "transparent",
+            color: "#EF4444", cursor: "pointer", fontWeight: "600",
+            transition: "all 0.15s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#FEF2F2"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+        >
+          ✕ Cancel Job
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -244,29 +358,78 @@ export function BatchPage() {
   const [rows, setRows] = useState([newRow(nextId++)]);
 
   // ── File mode state ──
-  const [file, setFile]             = useState(null);
-  const [fileRows, setFileRows]     = useState([]);
+  const [file, setFile]               = useState(null);
+  const [fileRows, setFileRows]       = useState([]);
   const [fileParsing, setFileParsing] = useState(false);
-  const [fileError, setFileError]   = useState("");
-  const [isDragging, setIsDragging] = useState(false);
+  const [fileError, setFileError]     = useState("");
+  const [isDragging, setIsDragging]   = useState(false);
   const fileRef = useRef();
 
-  // ── Shared results state ──
-  const [scanning, setScanning]     = useState(false);
-  const [progress, setProgress]     = useState(0);
+  // ── Async job state ──
+  const [jobId, setJobId]           = useState(null);
+  const [jobStatus, setJobStatus]   = useState(null); // null | "queued" | "processing" | "complete" | "failed" | "cancelled"
+  const [jobProgress, setJobProgress] = useState({ completed: 0, total: 0 });
   const [results, setResults]       = useState(null);
   const [expanded, setExpanded]     = useState({});
   const [scanError, setScanError]   = useState("");
+  const [startTime, setStartTime]   = useState(null);
+  const [elapsedMs, setElapsedMs]   = useState(0);
+
+  const pollRef = useRef(null);
+
+  // ── Elapsed timer ──
+  useEffect(() => {
+    let timer;
+    if (jobStatus === "processing" || jobStatus === "queued") {
+      timer = setInterval(() => {
+        setElapsedMs(Date.now() - startTime);
+      }, 500);
+    }
+    return () => clearInterval(timer);
+  }, [jobStatus, startTime]);
+
+  // ── Poll job status ──
+  const pollJob = useCallback(async (id) => {
+    try {
+      const res = await fetch(`${API}/v1/jobs/${id}`);
+      if (!res.ok) throw new Error("Poll failed");
+      const data = await res.json();
+
+      setJobStatus(data.status);
+      setJobProgress({ completed: data.completed, total: data.total });
+
+      if (data.status === "complete" || data.status === "cancelled") {
+        setResults(data.results || []);
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      } else if (data.status === "failed") {
+        setScanError("Batch job failed on the server.");
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    } catch (e) {
+      console.error("Poll error:", e);
+    }
+  }, []);
+
+  // ── Start polling when jobId is set ──
+  useEffect(() => {
+    if (!jobId) return;
+    // Poll immediately, then every 2s
+    pollJob(jobId);
+    pollRef.current = setInterval(() => pollJob(jobId), 2000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [jobId, pollJob]);
 
   // ── Manual row operations ──
   function addRow() {
     setRows((prev) => prev.length < 3 ? [...prev, newRow(nextId++)] : prev);
   }
-
   function updateRow(id, updated) {
     setRows((prev) => prev.map((r) => (r.id === id ? updated : r)));
   }
-
   function removeRow(id) {
     setRows((prev) => prev.filter((r) => r.id !== id));
   }
@@ -302,11 +465,14 @@ export function BatchPage() {
     handleFilePick(e.dataTransfer.files[0]);
   }
 
-  // ── Validate & run scan ──
+  // ── Submit batch job ──
   async function runScan() {
     setScanError("");
     setResults(null);
-    setProgress(0);
+    setJobId(null);
+    setJobStatus(null);
+    setJobProgress({ completed: 0, total: 0 });
+    setExpanded({});
 
     let items;
     if (mode === "manual") {
@@ -328,42 +494,76 @@ export function BatchPage() {
       }
     }
 
-    setScanning(true);
     try {
-      // Send all at once — backend runs them sequentially and streams progress via final count
-      const res = await fetch(`${API}/batch-analyze`, {
+      const res = await fetch(`${API}/v1/analyse/batch`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({
+          items,
+          file_name: file?.name || null,
+        }),
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.detail || "Batch analysis failed");
+        throw new Error(err.detail || "Failed to start batch job");
       }
       const data = await res.json();
-      setProgress(data.total);
-      setResults(data.results);
+      setJobId(data.job_id);
+      setJobProgress({ completed: 0, total: data.total });
+      setJobStatus("queued");
+      setStartTime(Date.now());
+      setElapsedMs(0);
     } catch (e) {
       setScanError(e.message);
-    } finally {
-      setScanning(false);
     }
   }
 
-  // ── Derived ──
-  const canScan = mode === "manual"
-    ? rows.every((r) => r.channel === "url" ? r.url.trim() : r.message.trim())
-    : fileRows.length > 0;
+  // ── Cancel job ──
+  async function cancelJob() {
+    if (!jobId) return;
+    try {
+      await fetch(`${API}/v1/jobs/${jobId}/cancel`, { method: "POST" });
+      setJobStatus("cancelled");
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    } catch (e) {
+      console.error("Cancel failed:", e);
+    }
+  }
 
+  // ── Reset ──
+  function resetPage() {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = null;
+    setJobId(null);
+    setJobStatus(null);
+    setJobProgress({ completed: 0, total: 0 });
+    setResults(null);
+    setExpanded({});
+    setScanError("");
+    setElapsedMs(0);
+    setStartTime(null);
+  }
+
+  // ── Derived ──
+  const isRunning = jobStatus === "queued" || jobStatus === "processing";
+  const isDone    = jobStatus === "complete" || jobStatus === "cancelled";
+  const canScan   = !isRunning && (
+    mode === "manual"
+      ? rows.every((r) => r.channel === "url" ? r.url.trim() : r.message.trim())
+      : fileRows.length > 0
+  );
   const totalItems = mode === "manual" ? rows.length : fileRows.length;
 
-  const summary = results ? {
+  const summary = results && results.length > 0 ? {
     total:  results.length,
     fraud:  results.filter((r) => r.verdict?.toUpperCase() === "FRAUD").length,
     susp:   results.filter((r) => r.verdict?.toUpperCase() === "SUSPICIOUS").length,
     safe:   results.filter((r) => r.verdict?.toUpperCase() === "SAFE").length,
     errors: results.filter((r) => r.verdict?.toUpperCase() === "ERROR").length,
   } : null;
+
+  const elapsedFinished = Math.round(elapsedMs / 1000);
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -378,7 +578,7 @@ export function BatchPage() {
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => { setMode(tab.id); setResults(null); setScanError(""); }}
+            onClick={() => { setMode(tab.id); resetPage(); }}
             style={{
               padding: "10px 22px", borderRadius: "10px", fontSize: "13px",
               fontWeight: mode === tab.id ? "700" : "500", cursor: "pointer",
@@ -394,7 +594,7 @@ export function BatchPage() {
       {/* ══════════════════════════════
           MANUAL ENTRY MODE
       ══════════════════════════════ */}
-      {mode === "manual" && (
+      {mode === "manual" && !isRunning && !isDone && (
         <div className="card" style={{ marginBottom: "20px" }}>
           <h2 style={{ marginBottom: "20px" }}>Manual Batch Entry</h2>
 
@@ -437,7 +637,7 @@ export function BatchPage() {
       {/* ══════════════════════════════
           FILE IMPORT MODE
       ══════════════════════════════ */}
-      {mode === "file" && (
+      {mode === "file" && !isRunning && !isDone && (
         <div className="card" style={{ marginBottom: "20px" }}>
           <h2 style={{ marginBottom: "20px" }}>File Import</h2>
 
@@ -549,7 +749,7 @@ export function BatchPage() {
         </div>
       )}
 
-      {/* ── Run button + progress ── */}
+      {/* ── Run button / Progress / Completed header ── */}
       <div className="card" style={{ marginBottom: "20px" }}>
         {scanError && (
           <div style={{ padding: "10px 14px", borderRadius: "8px", background: "#FEE2E2", color: "#991B1B", fontSize: "12px", marginBottom: "14px" }}>
@@ -557,28 +757,68 @@ export function BatchPage() {
           </div>
         )}
 
-        {scanning ? (
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-              <span style={{ fontSize: "13px", fontWeight: "600", color: "var(--text, #111827)" }}>
-                Scanning {totalItems} {totalItems === 1 ? "message" : "messages"}…
+        {/* Running — show real progress bar */}
+        {isRunning && (
+          <ProgressBar
+            completed={jobProgress.completed}
+            total={jobProgress.total}
+            elapsedMs={elapsedMs}
+            onCancel={cancelJob}
+          />
+        )}
+
+        {/* Done / cancelled — show completion banner */}
+        {isDone && (
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "14px 0", flexWrap: "wrap", gap: "12px",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <span style={{ fontSize: "22px" }}>
+                {jobStatus === "cancelled" ? "🛑" : "✅"}
               </span>
-              <span style={{ fontSize: "12px", color: "var(--cyan, #6366F1)", fontFamily: "monospace" }}>
-                Please wait
-              </span>
+              <div>
+                <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text, #111827)" }}>
+                  {jobStatus === "cancelled" ? "Job cancelled" : "Batch complete"}
+                  {" — "}
+                  <span style={{ color: "var(--cyan, #6366F1)" }}>
+                    {jobProgress.completed} of {jobProgress.total} analysed
+                  </span>
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--text3, #9CA3AF)", marginTop: "2px" }}>
+                  Finished in {fmtElapsed(elapsedFinished)}
+                </div>
+              </div>
             </div>
-            {/* Animated bar while waiting */}
-            <div style={{ height: "8px", borderRadius: "4px", background: "var(--border, #E5E7EB)", overflow: "hidden" }}>
-              <div style={{
-                height: "100%", borderRadius: "4px",
-                background: "linear-gradient(90deg, #6366F1, #8B5CF6)",
-                animation: "scanPulse 1.5s ease-in-out infinite",
-                width: "60%",
-              }} />
+            <div style={{ display: "flex", gap: "8px" }}>
+              {results?.length > 0 && (
+                <button
+                  onClick={() => downloadCsv(results, file?.name?.replace(/\.\w+$/, "") + "-results.csv" || "batch-results.csv")}
+                  style={{
+                    padding: "8px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "600",
+                    border: "1.5px solid #22C55E", background: "#F0FDF4",
+                    color: "#166534", cursor: "pointer",
+                  }}
+                >
+                  📥 Download CSV
+                </button>
+              )}
+              <button
+                onClick={resetPage}
+                style={{
+                  padding: "8px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "600",
+                  border: "1.5px solid var(--border, #E5E7EB)", background: "var(--bg2, #F9FAFB)",
+                  color: "var(--text2, #374151)", cursor: "pointer",
+                }}
+              >
+                ↩ New Batch
+              </button>
             </div>
-            <style>{`@keyframes scanPulse { 0%,100%{opacity:0.6} 50%{opacity:1} }`}</style>
           </div>
-        ) : (
+        )}
+
+        {/* Idle — show run button */}
+        {!isRunning && !isDone && (
           <button
           type="button"
           onClick={runScan}
@@ -594,7 +834,7 @@ export function BatchPage() {
       {/* ══════════════════════════════
           RESULTS
       ══════════════════════════════ */}
-      {results && (
+      {results && results.length > 0 && (
         <div className="card">
           {/* Summary chips */}
           <div style={{ display: "flex", gap: "8px", marginBottom: "20px", flexWrap: "wrap" }}>
@@ -641,6 +881,10 @@ export function BatchPage() {
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes scanPulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
+      `}</style>
     </div>
   );
 }
