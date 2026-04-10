@@ -5,10 +5,10 @@ import { useState, useRef, useEffect, useCallback } from "react";
 const API = "http://localhost:8000";
 
 const VERDICT_STYLE = {
-  FRAUD:      { bg: "#FFE4E6", color: "#9F1239", border: "#FCA5A5", emoji: "🚨" },
-  SUSPICIOUS: { bg: "#FEF3C7", color: "#92400E", border: "#FCD34D", emoji: "⚠️" },
-  SAFE:       { bg: "#DCFCE7", color: "#166534", border: "#86EFAC", emoji: "✅" },
-  ERROR:      { bg: "#F3F4F6", color: "#6B7280", border: "#D1D5DB", emoji: "❌" },
+  FRAUD:      { bg: "rgba(239, 68, 68, 0.1)", color: "var(--red)", border: "rgba(239, 68, 68, 0.2)", emoji: "🚨" },
+  SUSPICIOUS: { bg: "rgba(245, 158, 11, 0.1)", color: "var(--amber)", border: "rgba(245, 158, 11, 0.2)", emoji: "⚠️" },
+  SAFE:       { bg: "rgba(16, 185, 129, 0.1)", color: "var(--green)", border: "rgba(16, 185, 129, 0.2)", emoji: "✅" },
+  ERROR:      { bg: "var(--bg-hover)", color: "var(--text3)", border: "var(--border)", emoji: "❌" },
 };
 
 function verdictStyle(v) {
@@ -82,7 +82,7 @@ function ScoreChip({ score, verdict }) {
   const s = verdictStyle(verdict);
   return (
     <span style={{
-      fontFamily: "monospace", fontSize: "13px", fontWeight: "700",
+      fontFamily: "var(--font-mono)", fontSize: "13px", fontWeight: "700",
       color: s.color, minWidth: "32px", textAlign: "right",
     }}>
       {score ?? "—"}
@@ -91,11 +91,15 @@ function ScoreChip({ score, verdict }) {
 }
 
 function ChannelPill({ channel }) {
-  const map = { text: ["✏️", "#EEF2FF", "#4338CA"], email: ["📧", "#FFF7ED", "#C2410C"], url: ["🔗", "#F0FDF4", "#15803D"] };
-  const [icon, bg, color] = map[channel] || ["❓", "#F3F4F6", "#4B5563"];
+  const map = { 
+    text:  ["✏️", "var(--bg-hover)", "var(--text2)"], 
+    email: ["📧", "rgba(37, 99, 235, 0.05)", "var(--primary)"], 
+    url:   ["🔗", "rgba(16, 185, 129, 0.05)", "var(--green)"] 
+  };
+  const [icon, bg, color] = map[channel] || ["❓", "var(--bg-hover)", "var(--text2)"];
   return (
-    <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "10px", background: bg, color, fontWeight: "600" }}>
-      {icon} {channel}
+    <span style={{ fontSize: "11px", padding: "4px 10px", borderRadius: "8px", background: bg, color, fontWeight: "600", border: "1px solid rgba(0,0,0,0.05)" }}>
+      {icon} {channel.toUpperCase()}
     </span>
   );
 }
@@ -136,16 +140,15 @@ function ProgressBar({ completed, total, elapsedMs, onCancel }) {
 
       {/* Progress track */}
       <div style={{
-        height: "10px", borderRadius: "5px",
-        background: "var(--border, #E5E7EB)", overflow: "hidden",
-        marginBottom: "8px",
+        height: "8px", borderRadius: "10px",
+        background: "var(--border)", overflow: "hidden",
+        marginBottom: "12px",
       }}>
         <div style={{
-          height: "100%", borderRadius: "5px",
+          height: "100%", 
           width: `${pct}%`,
-          background: "linear-gradient(90deg, #6366F1 0%, #8B5CF6 100%)",
+          background: "var(--primary)",
           transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)",
-          boxShadow: "0 0 8px rgba(99,102,241,0.4)",
         }} />
       </div>
 
@@ -211,11 +214,12 @@ function ManualRow({ row, index, onChange, onRemove, totalRows }) {
             key={ch.id}
             onClick={() => onChange({ ...row, channel: ch.id, message: "", sender: "", url: "" })}
             style={{
-              padding: "6px 14px", borderRadius: "7px", fontSize: "12px", cursor: "pointer",
-              border: `1.5px solid ${row.channel === ch.id ? "#6366F1" : "var(--border, #E5E7EB)"}`,
-              background: row.channel === ch.id ? "#EEF2FF" : "var(--bg2, #F9FAFB)",
-              color: row.channel === ch.id ? "#4338CA" : "var(--text2, #374151)",
-              fontWeight: row.channel === ch.id ? "700" : "400",
+              padding: "8px 16px", borderRadius: "8px", fontSize: "12px", cursor: "pointer",
+              border: "1.5px solid",
+              borderColor: row.channel === ch.id ? "var(--primary)" : "var(--border)",
+              background: row.channel === ch.id ? "var(--primary-dim)" : "var(--surface)",
+              color: row.channel === ch.id ? "var(--primary)" : "var(--text2)",
+              fontWeight: row.channel === ch.id ? "700" : "500",
               transition: "all 0.15s",
             }}
           >{ch.icon} {ch.label}</button>
@@ -281,7 +285,7 @@ function ResultRow({ result, isExpanded, onToggle }) {
         onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-hover, #F9FAFB)")}
         onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
       >
-        <td style={{ padding: "12px 16px", fontSize: "12px", color: "var(--text3, #6B7280)", fontFamily: "monospace" }}>
+        <td style={{ padding: "16px", fontSize: "12px", color: "var(--text3)", fontFamily: "var(--font-mono)" }}>
           #{(result.index + 1).toString().padStart(2, "0")}
         </td>
         <td style={{ padding: "12px 8px" }}>
@@ -568,13 +572,13 @@ export function BatchPage() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ maxWidth: "860px", margin: "0 auto", paddingBottom: "48px" }}>
+    <div style={{ paddingBottom: "48px" }}>
 
       {/* ── Mode tabs ── */}
       <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
         {[
           { id: "manual", icon: "✍️", label: "Manual Entry" },
-          { id: "file",   icon: "📂", label: "File Import (CSV / PDF)" },
+          { id: "file",   icon: "📂", label: "File Import (CSV / PDF / XLSX)" },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -582,9 +586,10 @@ export function BatchPage() {
             style={{
               padding: "10px 22px", borderRadius: "10px", fontSize: "13px",
               fontWeight: mode === tab.id ? "700" : "500", cursor: "pointer",
-              border: `1.5px solid ${mode === tab.id ? "var(--cyan, #6366F1)" : "var(--border, #E5E7EB)"}`,
-              background: mode === tab.id ? "rgba(99,102,241,0.1)" : "var(--surface, #fff)",
-              color: mode === tab.id ? "var(--cyan, #4338CA)" : "var(--text2, #374151)",
+              border: "1.5px solid",
+              borderColor: mode === tab.id ? "var(--primary)" : "var(--border)",
+              background: mode === tab.id ? "var(--primary-dim)" : "var(--surface)",
+              color: mode === tab.id ? "var(--primary)" : "var(--text2)",
               transition: "all 0.2s",
             }}
           >{tab.icon} {tab.label}</button>
@@ -614,16 +619,16 @@ export function BatchPage() {
             disabled={rows.length >= 3}
             style={{
               width: "100%", padding: "12px", borderRadius: "10px",
-              border: `2px dashed ${rows.length >= 3 ? "var(--border, #E5E7EB)" : "var(--border2, #D1D5DB)"}`,
+              border: "2px dashed var(--border)",
               background: "transparent",
-              color: rows.length >= 3 ? "var(--text3, #C4C4C4)" : "var(--text3, #6B7280)",
+              color: "var(--text3)",
               fontSize: "13px", fontWeight: "600",
               cursor: rows.length >= 3 ? "not-allowed" : "pointer",
               transition: "all 0.2s", marginBottom: "8px",
               opacity: rows.length >= 3 ? 0.5 : 1,
             }}
-            onMouseEnter={(e) => { if (rows.length < 3) { e.currentTarget.style.borderColor = "var(--cyan, #6366F1)"; e.currentTarget.style.color = "var(--cyan, #4338CA)"; } }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = rows.length >= 3 ? "var(--border, #E5E7EB)" : "var(--border2, #D1D5DB)"; e.currentTarget.style.color = rows.length >= 3 ? "var(--text3, #C4C4C4)" : "var(--text3, #6B7280)"; }}
+            onMouseEnter={(e) => { if (rows.length < 3) { e.currentTarget.style.borderColor = "var(--primary)"; e.currentTarget.style.color = "var(--primary)"; e.currentTarget.style.background = "var(--primary-dim)"; } }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.background = "transparent"; }}
           >
             {rows.length >= 3 ? "🔒 Max 3 rows reached" : "➕ Add Row"}
           </button>
@@ -648,11 +653,12 @@ export function BatchPage() {
             onDrop={handleDrop}
             onClick={() => fileRef.current?.click()}
             style={{
-              border: `2px dashed ${isDragging ? "var(--cyan, #6366F1)" : file ? "var(--cyan, #6366F1)" : "var(--border2, #D1D5DB)"}`,
+              border: "2px dashed",
+              borderColor: isDragging || file ? "var(--primary)" : "var(--border2)",
               borderRadius: "14px",
-              padding: "36px 20px",
+              padding: "48px 24px",
               textAlign: "center",
-              background: isDragging ? "rgba(99,102,241,0.06)" : file ? "rgba(99,102,241,0.04)" : "var(--bg2, #FAFAFA)",
+              background: isDragging ? "var(--primary-dim)" : file ? "rgba(37, 99, 235, 0.02)" : "var(--bg-hover)",
               cursor: "pointer",
               transition: "all 0.2s",
               marginBottom: "16px",
@@ -681,18 +687,21 @@ export function BatchPage() {
             ) : (
               <>
                 <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text, #111827)", marginBottom: "4px" }}>
-                  {isDragging ? "Drop your file here" : "Drag & drop a CSV or PDF file"}
+                  {isDragging ? "Drop your file here" : "Drag & drop a CSV, PDF or XLSX file"}
                 </div>
                 <div style={{ fontSize: "12px", color: "var(--text3, #9CA3AF)", marginBottom: "16px" }}>
-                  CSV columns: <code>message</code>, <code>channel</code> (optional), <code>sender</code> (optional)
+                  Supported: <strong>CSV</strong> (with header), <strong>PDF</strong> (text), <strong>XLSX</strong>
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
                   style={{
-                    padding: "9px 20px", borderRadius: "8px", fontSize: "13px", fontWeight: "600",
-                    border: "1.5px solid var(--cyan, #6366F1)", background: "rgba(99,102,241,0.1)",
-                    color: "var(--cyan, #4338CA)", cursor: "pointer",
+                    padding: "10px 24px", borderRadius: "10px", fontSize: "14px", fontWeight: "600",
+                    border: "1.5px solid var(--primary)", background: "var(--primary-dim)",
+                    color: "var(--primary)", cursor: "pointer",
+                    transition: "all 0.2s",
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--primary)"; e.currentTarget.style.color = "#fff"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "var(--primary-dim)"; e.currentTarget.style.color = "var(--primary)"; }}
                 >
                   Browse Files
                 </button>
@@ -701,7 +710,7 @@ export function BatchPage() {
             <input
               ref={fileRef}
               type="file"
-              accept=".csv,.pdf"
+              accept=".csv,.pdf,.xlsx"
               style={{ display: "none" }}
               onChange={(e) => handleFilePick(e.target.files[0])}
             />
@@ -778,10 +787,10 @@ export function BatchPage() {
                 {jobStatus === "cancelled" ? "🛑" : "✅"}
               </span>
               <div>
-                <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text, #111827)" }}>
+                <div style={{ fontSize: "15px", fontWeight: "700", color: "var(--text)" }}>
                   {jobStatus === "cancelled" ? "Job cancelled" : "Batch complete"}
                   {" — "}
-                  <span style={{ color: "var(--cyan, #6366F1)" }}>
+                  <span style={{ color: "var(--primary)" }}>
                     {jobProgress.completed} of {jobProgress.total} analysed
                   </span>
                 </div>
@@ -796,8 +805,8 @@ export function BatchPage() {
                   onClick={() => downloadCsv(results, file?.name?.replace(/\.\w+$/, "") + "-results.csv" || "batch-results.csv")}
                   style={{
                     padding: "8px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "600",
-                    border: "1.5px solid #22C55E", background: "#F0FDF4",
-                    color: "#166534", cursor: "pointer",
+                    border: "1.5px solid var(--green)", background: "rgba(16, 185, 129, 0.05)",
+                    color: "var(--green)", cursor: "pointer",
                   }}
                 >
                   📥 Download CSV
@@ -807,8 +816,8 @@ export function BatchPage() {
                 onClick={resetPage}
                 style={{
                   padding: "8px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: "600",
-                  border: "1.5px solid var(--border, #E5E7EB)", background: "var(--bg2, #F9FAFB)",
-                  color: "var(--text2, #374151)", cursor: "pointer",
+                  border: "1px solid var(--border)", background: "var(--bg-hover)",
+                  color: "var(--text2)", cursor: "pointer",
                 }}
               >
                 ↩ New Batch

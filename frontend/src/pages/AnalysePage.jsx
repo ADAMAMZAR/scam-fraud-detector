@@ -26,44 +26,44 @@ const EXAMPLES = [
 // ── Fully explicit colors — no CSS variables inside result card ──────────────
 const RISK = {
   Safe: {
-    bg:         "#F0FDF4",
-    bannerText: "#14532D",
-    scoreColor: "#16A34A",
-    barColor:   "#22C55E",
-    border:     "#86EFAC",
-    badgeBg:    "#DCFCE7",
-    badgeText:  "#166534",
-    reasonBg:   "#F0FDF4",
-    reasonBorder:"#BBF7D0",
-    shapeBar:   "#22C55E",
+    bg:         "rgba(16, 185, 129, 0.05)",
+    bannerText: "var(--green)",
+    scoreColor: "var(--green)",
+    barColor:   "var(--green)",
+    border:     "rgba(16, 185, 129, 0.2)",
+    badgeBg:    "rgba(16, 185, 129, 0.1)",
+    badgeText:  "var(--green)",
+    reasonBg:   "var(--bg-hover)",
+    reasonBorder:"var(--border)",
+    shapeBar:   "var(--green)",
     label:      "Safe",
     emoji:      "✅",
   },
   Suspicious: {
-    bg:         "#FFFBEB",
-    bannerText: "#78350F",
-    scoreColor: "#D97706",
-    barColor:   "#F59E0B",
-    border:     "#FCD34D",
-    badgeBg:    "#FEF3C7",
-    badgeText:  "#92400E",
-    reasonBg:   "#FFFBEB",
-    reasonBorder:"#FDE68A",
-    shapeBar:   "#F59E0B",
+    bg:         "rgba(245, 158, 11, 0.05)",
+    bannerText: "var(--amber)",
+    scoreColor: "var(--amber)",
+    barColor:   "var(--amber)",
+    border:     "rgba(245, 158, 11, 0.2)",
+    badgeBg:    "rgba(245, 158, 11, 0.1)",
+    badgeText:  "var(--amber)",
+    reasonBg:   "var(--bg-hover)",
+    reasonBorder:"var(--border)",
+    shapeBar:   "var(--amber)",
     label:      "Suspicious",
     emoji:      "⚠️",
   },
   Fraud: {
-    bg:         "#FFF1F2",
-    bannerText: "#881337",
-    scoreColor: "#DC2626",
-    barColor:   "#EF4444",
-    border:     "#FCA5A5",
-    badgeBg:    "#FFE4E6",
-    badgeText:  "#9F1239",
-    reasonBg:   "#FFF1F2",
-    reasonBorder:"#FECDD3",
-    shapeBar:   "#EF4444",
+    bg:         "rgba(239, 68, 68, 0.05)",
+    bannerText: "var(--red)",
+    scoreColor: "var(--red)",
+    barColor:   "var(--red)",
+    border:     "rgba(239, 68, 68, 0.2)",
+    badgeBg:    "rgba(239, 68, 68, 0.1)",
+    badgeText:  "var(--red)",
+    reasonBg:   "var(--bg-hover)",
+    reasonBorder:"var(--border)",
+    shapeBar:   "var(--red)",
     label:      "Fraud",
     emoji:      "🚨",
   },
@@ -227,9 +227,9 @@ function ReasonRow({ reason, colors, maxPoints = 40 }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontSize: "13px",
+            fontSize: "14px",
             fontWeight: "600",
-            color: "#111827",
+            color: "var(--text)",
             marginBottom: "3px",
           }}
         >
@@ -237,8 +237,8 @@ function ReasonRow({ reason, colors, maxPoints = 40 }) {
         </div>
         <div
           style={{
-            fontSize: "11px",
-            color: "#6B7280",
+            fontSize: "12px",
+            color: "var(--text3)",
             fontWeight: "500",
           }}
         >
@@ -325,8 +325,8 @@ function ResultCard({ result }) {
         marginTop: "24px",
         borderRadius: "14px",
         overflow: "hidden",
-        border: `2px solid ${colors.border}`,
-        background: "#FFFFFF",
+        border: `1.5px solid ${colors.border}`,
+        background: "var(--surface)",
         boxShadow: `0 4px 24px ${colors.barColor}22`,
         animation: "resultIn 0.35s cubic-bezier(0.4,0,0.2,1)",
       }}
@@ -568,7 +568,7 @@ export function AnalysePage() {
     (channel === "image" && imageFile !== null);
 
   return (
-    <div style={{ maxWidth: "680px", margin: "0 auto" }}>
+    <div>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
@@ -595,9 +595,9 @@ export function AnalysePage() {
                 fontSize: "12px",
                 padding: "7px 16px",
                 borderRadius: "20px",
-                border: "1.5px solid #E5E7EB",
-                background: "#F9FAFB",
-                color: "#374151",
+                border: "1px solid var(--border)",
+                background: "var(--bg-hover)",
+                color: "var(--text2)",
                 cursor: "pointer",
                 fontWeight: "500",
                 transition: "all 0.15s",
@@ -614,7 +614,7 @@ export function AnalysePage() {
 
       {/* ── Input card ── */}
       <div className="card">
-        <h2 style={{ marginBottom: "20px", color: "#81bee9" }}>
+        <h2 style={{ marginBottom: "20px" }}>
           Analyse Message
         </h2>
 
@@ -650,13 +650,14 @@ export function AnalysePage() {
                   setResult(null);
                 }}
                 style={{
-                  padding: "8px 18px",
+                  padding: "10px 20px",
                   borderRadius: "8px",
-                  border: `1.5px solid ${channel === ch.id ? "#6366F1" : "#E5E7EB"}`,
-                  background: channel === ch.id ? "#EEF2FF" : "#F9FAFB",
-                  color: channel === ch.id ? "#4338CA" : "#374151",
-                  fontWeight: channel === ch.id ? "700" : "400",
-                  fontSize: "13px",
+                  border: "1.5px solid",
+                  borderColor: channel === ch.id ? "var(--primary)" : "var(--border)",
+                  background: channel === ch.id ? "var(--primary-dim)" : "var(--surface)",
+                  color: channel === ch.id ? "var(--primary)" : "var(--text2)",
+                  fontWeight: channel === ch.id ? "700" : "500",
+                  fontSize: "14px",
                   cursor: "pointer",
                   transition: "all 0.15s",
                 }}
@@ -713,16 +714,19 @@ export function AnalysePage() {
                 width: "100%",
                 padding: "12px 14px",
                 borderRadius: "10px",
-                border: "1.5px solid #E5E7EB",
-                background: "#F9FAFB",
-                color: "#111827",
-                fontSize: "14px",
+                border: "1px solid var(--border)",
+                background: "var(--bg-input)",
+                color: "var(--text)",
+                fontSize: "15px",
                 resize: "vertical",
                 fontFamily: "inherit",
                 lineHeight: "1.6",
                 outline: "none",
                 boxSizing: "border-box",
+                transition: "border-color 0.2s, box-shadow 0.2s",
               }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "var(--primary)"; e.currentTarget.style.boxShadow = "0 0 0 3px var(--primary-dim)"; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "none"; }}
             />
             <div
               style={{
@@ -865,11 +869,12 @@ export function AnalysePage() {
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleDrop}
               style={{
-                border: `2px dashed ${isDragging ? "#6366F1" : imageFile ? "#6366F1" : "#D1D5DB"}`,
+                border: "2px dashed",
+                borderColor: isDragging || imageFile ? "var(--primary)" : "var(--border2)",
                 borderRadius: "14px",
-                padding: imagePreview ? "12px" : "40px 20px",
+                padding: imagePreview ? "16px" : "48px 24px",
                 textAlign: "center",
-                background: isDragging ? "#EEF2FF" : imageFile ? "#F5F3FF" : "#FAFAFA",
+                background: isDragging ? "var(--primary-dim)" : imageFile ? "rgba(37, 99, 235, 0.02)" : "var(--bg-hover)",
                 transition: "all 0.2s",
                 cursor: "pointer",
                 position: "relative",
@@ -877,56 +882,47 @@ export function AnalysePage() {
               onClick={() => !imageFile && document.getElementById("img-upload-input").click()}
             >
               {imagePreview ? (
-                /* Preview */
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "16px", textAlign: "left" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "20px", textAlign: "left" }}>
                   <img
                     src={imagePreview}
                     alt="Preview"
                     style={{
-                      width: "120px",
-                      height: "120px",
+                      width: "140px",
+                      height: "140px",
                       objectFit: "cover",
-                      borderRadius: "10px",
-                      border: "1px solid #E5E7EB",
+                      borderRadius: "12px",
+                      border: "1px solid var(--border)",
+                      boxShadow: "var(--shadow-sm)",
                       flexShrink: 0,
                     }}
                   />
-                  <div style={{ flex: 1, paddingTop: "4px" }}>
-                    <div style={{ fontSize: "13px", fontWeight: "600", color: "#111827", marginBottom: "4px", wordBreak: "break-all" }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text)", marginBottom: "4px" }}>
                       {imageFile.name}
                     </div>
-                    <div style={{ fontSize: "11px", color: "#6B7280", marginBottom: "10px" }}>
+                    <div style={{ fontSize: "12px", color: "var(--text3)", marginBottom: "12px" }}>
                       {(imageFile.size / 1024).toFixed(1)} KB · {imageFile.type}
                     </div>
-                    <div style={{ fontSize: "11px", color: "#6366F1", fontWeight: "500" }}>
-                      ✓ Ready to scan
+                    <div style={{ fontSize: "12px", color: "var(--primary)", fontWeight: "600" }}>
+                      ✓ Screenshot ready for analysis
                     </div>
                   </div>
                 </div>
               ) : (
-                /* Empty state */
                 <>
-                  <div style={{ fontSize: "40px", marginBottom: "12px" }}>📷</div>
-                  <div style={{ fontSize: "14px", fontWeight: "600", color: "#374151", marginBottom: "6px" }}>
-                    {isDragging ? "Drop your screenshot here" : "Drag & drop a screenshot"}
+                  <div style={{ fontSize: "40px", marginBottom: "12px" }}>📸</div>
+                  <div style={{ fontSize: "15px", fontWeight: "700", color: "var(--text)", marginBottom: "6px" }}>
+                    {isDragging ? "Drop screenshot here" : "Upload screenshot for analysis"}
                   </div>
-                  <div style={{ fontSize: "12px", color: "#9CA3AF", marginBottom: "16px" }}>
-                    WhatsApp, SMS, Email — JPG, PNG, WEBP supported
+                  <div style={{ fontSize: "12px", color: "var(--text3)", marginBottom: "20px" }}>
+                    WhatsApp, SMS, or Email — JPG/PNG/WEBP
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); document.getElementById("img-upload-input").click(); }}
-                    style={{
-                      padding: "9px 20px",
-                      borderRadius: "8px",
-                      border: "1.5px solid #6366F1",
-                      background: "#EEF2FF",
-                      color: "#4338CA",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      cursor: "pointer",
-                    }}
+                    className="topbar-btn primary"
+                    style={{ padding: "10px 24px", fontSize: "14px" }}
                   >
-                    Browse Files
+                    Select Screenshot
                   </button>
                 </>
               )}
@@ -969,10 +965,10 @@ export function AnalysePage() {
                   width: "100%",
                   padding: "12px 14px",
                   borderRadius: "10px",
-                  border: "1.5px solid #E5E7EB",
-                  background: "#F9FAFB",
-                  color: "#111827",
-                  fontSize: "14px",
+                  border: "1px solid var(--border)",
+                  background: "var(--bg-input)",
+                  color: "var(--text)",
+                  fontSize: "15px",
                   outline: "none",
                   boxSizing: "border-box",
                 }}
@@ -1022,10 +1018,10 @@ export function AnalysePage() {
                 width: "100%",
                 padding: "12px 14px",
                 borderRadius: "10px",
-                border: "1.5px solid #E5E7EB",
-                background: "#F9FAFB",
-                color: "#111827",
-                fontSize: "14px",
+                border: "1px solid var(--border)",
+                background: "var(--bg-input)",
+                color: "var(--text)",
+                fontSize: "15px",
                 resize: "vertical",
                 fontFamily: "inherit",
                 lineHeight: "1.6",
@@ -1060,14 +1056,12 @@ export function AnalysePage() {
           disabled={!canAnalyse || loading}
           style={{
             width: "100%",
-            padding: "14px",
-            borderRadius: "10px",
+            padding: "16px",
+            borderRadius: "12px",
             border: "none",
-            background:
-              !canAnalyse || loading ? "#E5E7EB" : "#6366F1",
-            color:
-              !canAnalyse || loading ? "#9CA3AF" : "#FFFFFF",
-            fontSize: "15px",
+            background: !canAnalyse || loading ? "var(--border)" : "var(--primary)",
+            color: "#FFFFFF",
+            fontSize: "16px",
             fontWeight: "700",
             cursor: !canAnalyse || loading ? "not-allowed" : "pointer",
             transition: "all 0.2s",
@@ -1075,26 +1069,25 @@ export function AnalysePage() {
             alignItems: "center",
             justifyContent: "center",
             gap: "10px",
-            letterSpacing: "-0.01em",
+            boxShadow: canAnalyse && !loading ? "var(--shadow)" : "none",
           }}
         >
           {loading ? (
             <>
-              <span
+              <div
                 style={{
                   width: "18px",
                   height: "18px",
-                  border: "2.5px solid #FFFFFF44",
-                  borderTop: "2.5px solid #FFFFFF",
+                  border: "2px solid rgba(255,255,255,0.3)",
+                  borderTopColor: "#fff",
                   borderRadius: "50%",
-                  display: "inline-block",
                   animation: "spin 0.8s linear infinite",
                 }}
               />
               Analysing...
             </>
           ) : (
-            "🔍 Analyse Message"
+            <>🔍 Start Scam Analysis</>
           )}
         </button>
       </div>
@@ -1118,23 +1111,23 @@ export function AnalysePage() {
             </p>
           </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 48 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "48px" }}>
           {[
             {
               icon: "🏦",
-              title: "Bank impersonation scams",
-              desc: "Fake messages pretending to be Maybank, CIMB, RHB, or Bank Negara asking you to verify your account or click a suspicious link. We catch these immediately.",
+              title: "Bank Impersonation",
+              desc: "Detects fake messages pretending to be Maybank, CIMB, or Bank Negara asking for sensitive details or login.",
             },
             {
               icon: "🎁",
-              title: "Fake government & reward schemes",
-              desc: "Scammers impersonate LHDN, KWSP, PDRM, or government relief funds offering fake cash rewards. Our AI flags urgency tactics and fake official language.",
+              title: "Government Relief Scams",
+              desc: "Identifies fraudulent offers for cash rewards, KWSP withdrawals, or LHDN relief that aim to steal your credentials.",
             },
           ].map((f) => (
-            <div key={f.title} className="card" style={{ padding: "24px" }}>
-              <div style={{ fontSize: 28, marginBottom: 12 }}>{f.icon}</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", marginBottom: 8 }}>{f.title}</div>
-              <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.7 }}>{f.desc}</p>
+            <div key={f.title} className="card" style={{ padding: "24px", border: "1px solid var(--border)" }}>
+              <div style={{ fontSize: "32px", marginBottom: "16px" }}>{f.icon}</div>
+              <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--text)", marginBottom: "8px" }}>{f.title}</div>
+              <p style={{ fontSize: "13px", color: "var(--text2)", lineHeight: "1.7" }}>{f.desc}</p>
             </div>
           ))}
         </div>

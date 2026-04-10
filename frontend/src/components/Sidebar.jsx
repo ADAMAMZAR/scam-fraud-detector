@@ -3,30 +3,18 @@ import { NAV_ITEMS } from "../constants/config";
 export function Sidebar({ activePage, onPageChange }) {
   return (
     <div className="sidebar">
-      {/* Logo — NordVPN style */}
       <div className="sidebar-logo">
-        <div className="logo-mark" style={{ gap: 10 }}>
-          <img
-            src="/logo.png"
-            alt="Fraud Detector"
-            style={{
-              width: 40,
-              height: 40,
-              objectFit: "contain",
-              flexShrink: 0,
-            }}
-          />
-          <span
-            className="logo-text"
-            style={{
-              fontSize: 16,
-              fontWeight: 700,
-              letterSpacing: 0.3,
-              whiteSpace: "nowrap",
-            }}
-          >
-            Fraud Detector
-          </span>
+        <div className="logo-mark">
+          <div className="logo-icon">
+            <img
+              src="/logo.png"
+              alt="Fraud Detector"
+            />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span className="logo-text">Fraud Detector</span>
+            <span className="logo-sub">Enterprise AI</span>
+          </div>
         </div>
       </div>
 

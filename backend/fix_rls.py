@@ -14,15 +14,17 @@ FIX_RLS_SQL = """
 ALTER TABLE scans DISABLE ROW LEVEL SECURITY;
 ALTER TABLE scan_reasons DISABLE ROW LEVEL SECURITY;
 ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE batch_jobs DISABLE ROW LEVEL SECURITY;
 
 -- Also grant access to anon and service roles
 GRANT ALL ON scans TO anon, authenticated, service_role;
 GRANT ALL ON scan_reasons TO anon, authenticated, service_role;
 GRANT ALL ON settings TO anon, authenticated, service_role;
+GRANT ALL ON batch_jobs TO anon, authenticated, service_role;
 """
 
 def main():
-    print("🔧 Fixing Row Level Security (RLS) for dev environment...")
+    print("Fixing Row Level Security (RLS) for dev environment...")
     try:
         conn = psycopg2.connect(os.environ["DATABASE_URL"])
         conn.autocommit = True
@@ -30,9 +32,9 @@ def main():
         cur.execute(FIX_RLS_SQL)
         cur.close()
         conn.close()
-        print("✅ RLS disabled. The Supabase anon key can now read/write all tables.")
+        print("OK: RLS disabled. The Supabase anon key can now read/write all tables.")
     except Exception as e:
-        print(f"❌ Failed: {e}")
+        print(f"Error: Failed to fix RLS: {e}")
 
 if __name__ == "__main__":
     main()

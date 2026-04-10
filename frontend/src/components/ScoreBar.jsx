@@ -3,12 +3,12 @@
  */
 export function ScoreBar({ score, verdict }) {
   const colorMap = {
-    SCAM: "#EF4444",
-    FRAUD: "#EF4444",
-    SUSPICIOUS: "#F59E0B",
-    SAFE: "#22C55E",
+    SCAM: "var(--red)",
+    FRAUD: "var(--red)",
+    SUSPICIOUS: "var(--amber)",
+    SAFE: "var(--green)",
   };
-  const color = colorMap[verdict] || "#22C55E";
+  const color = colorMap[verdict] || "var(--green)";
   
   // Ensure score is a number and normalized (0.0 - 1.0)
   const normalizedScore = typeof score === "number" ? (score > 1 ? score / 100 : score) : 0;

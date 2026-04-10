@@ -10,3 +10,4 @@ httpx==0.28.1
 pypdf
 python-multipart
 websockets>=14.0,<16
+openpyxl

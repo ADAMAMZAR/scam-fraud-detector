@@ -18,7 +18,14 @@ const LINE_COLORS = {
   safe:       "#22C55E",
 };
 
-const PIE_COLORS = ["#6366F1", "#3B82F6", "#06B6D4", "#8B5CF6", "#EC4899", "#F97316"];
+const PIE_COLORS = [
+  "var(--primary)",
+  "var(--indigo-dark)",
+  "var(--indigo-light)",
+  "var(--slate-dark)",
+  "var(--primary-light)",
+  "var(--slate-light)"
+];
 
 const TACTIC_COLORS = {
   URGENCY_THREAT:         "#EF4444",
@@ -49,8 +56,8 @@ function TrendTooltip({ active, payload, label }) {
   if (!active || !payload) return null;
   return (
     <div style={{
-      background: "#1E293B", borderRadius: "10px", padding: "10px 14px",
-      boxShadow: "0 8px 24px rgba(0,0,0,0.3)", border: "none",
+      background: "var(--surface)", borderRadius: "10px", padding: "12px 16px",
+      boxShadow: "var(--shadow-lg)", border: "1px solid var(--border)",
     }}>
       <div style={{ fontSize: "11px", color: "#94A3B8", fontWeight: "600", marginBottom: "6px" }}>
         {fmtDate(label)}
@@ -58,7 +65,7 @@ function TrendTooltip({ active, payload, label }) {
       {payload.map((p) => (
         <div key={p.dataKey} style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: p.color }} />
-          <span style={{ fontSize: "12px", color: "#E2E8F0", fontWeight: "500" }}>
+          <span style={{ fontSize: "12px", color: "var(--text)", fontWeight: "600" }}>
             {p.dataKey.charAt(0).toUpperCase() + p.dataKey.slice(1)}: {p.value}
           </span>
         </div>
@@ -96,19 +103,22 @@ export function AnalyticsPage() {
       {/* ── Stat cards ──────────────────────────────────────────────────── */}
       <div className="stats-grid">
         {[
-          { label: "Total Scams",    value: stats.scams,      color: "#EF4444", icon: "🚨" },
-          { label: "Suspicious",     value: stats.suspicious, color: "#F59E0B", icon: "⚠️" },
-          { label: "Safe Messages",  value: stats.safe,       color: "#22C55E", icon: "✅" },
-          { label: "Total Analysed", value: stats.total,      color: "#6366F1", icon: "📊" },
+          { label: "Total Scams",    value: stats.scams,      color: "var(--red)",   icon: "🚨" },
+          { label: "Suspicious",     value: stats.suspicious, color: "var(--amber)", icon: "⚠️" },
+          { label: "Safe Messages",  value: stats.safe,       color: "var(--green)", icon: "✅" },
+          { label: "Total Analysed", value: stats.total,      color: "var(--primary)", icon: "📊" },
         ].map((s) => (
           <div className="stat-card" key={s.label}>
-            <div className="stat-glow" style={{ background: s.color }} />
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "18px" }}>{s.icon}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+              <div style={{ 
+                width: "40px", height: "40px", borderRadius: "10px", 
+                background: "var(--bg-hover)", display: "flex", 
+                alignItems: "center", justifyCenter: "center", fontSize: "20px" 
+              }}>{s.icon}</div>
               <div className="stat-label">{s.label}</div>
             </div>
             <div className="stat-value">{s.value}</div>
-            <div className="stat-delta delta-up">Live Data</div>
+            <div className="stat-delta" style={{ color: "var(--text3)" }}>Scanned via AI</div>
           </div>
         ))}
       </div>
@@ -147,13 +157,14 @@ export function AnalyticsPage() {
             key={r.key}
             onClick={() => setRange(r.key)}
             style={{
-              padding: "7px 16px",
-              borderRadius: "20px",
-              border: `1.5px solid ${range === r.key ? "#6366F1" : "#E5E7EB"}`,
-              background: range === r.key ? "#EEF2FF" : "#F9FAFB",
-              color: range === r.key ? "#4338CA" : "#374151",
+              padding: "8px 18px",
+              borderRadius: "10px",
+              border: "1.5px solid",
+              borderColor: range === r.key ? "var(--primary)" : "var(--border)",
+              background: range === r.key ? "var(--primary-dim)" : "var(--surface)",
+              color: range === r.key ? "var(--primary)" : "var(--text2)",
               fontWeight: range === r.key ? "700" : "500",
-              fontSize: "12px",
+              fontSize: "13px",
               cursor: "pointer",
               transition: "all 0.15s",
             }}
@@ -278,10 +289,10 @@ export function AnalyticsPage() {
                   position: "relative", marginTop: "-165px", textAlign: "center",
                   pointerEvents: "none", marginBottom: "120px",
                 }}>
-                  <div style={{ fontSize: "22px", fontWeight: "800", color: "#8aa9ee" }}>
+                  <div style={{ fontSize: "24px", fontWeight: "800", color: "var(--primary)" }}>
                     {data.total}
                   </div>
-                  <div style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: "600" }}>
+                  <div style={{ fontSize: "11px", color: "var(--text3)", fontWeight: "700" }}>
                     TOTAL
                   </div>
                 </div>
@@ -322,8 +333,9 @@ export function AnalyticsPage() {
                   />
                   <ReTooltip
                     contentStyle={{
-                      background: "#1E293B", border: "none", borderRadius: "8px",
-                      fontSize: "12px", color: "#E2E8F0",
+                      background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "10px",
+                      fontSize: "12px", color: "var(--text)",
+                      boxShadow: "var(--shadow-lg)",
                     }}
                     formatter={(v, name) => [`${v} occurrences`, fmtTactic(name)]}
                     labelFormatter={fmtTactic}

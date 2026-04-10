@@ -30,37 +30,41 @@ export function HistoryPage() {
   }, []);
 
   return (
-    <div className="full-width" style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "16px", height: "calc(100vh - 120px)" }}>
+    <div className="history-container" style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "20px", minHeight: "calc(100vh - 160px)" }}>
       {/* Message List */}
-      <div className="card" style={{ maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}>
-        <div className="card-title">Scan History</div>
-        {loading ? (
-          <div style={{ padding: "20px", textAlign: "center", color: "var(--text3)" }}>Loading history...</div>
-        ) : messages.length === 0 ? (
-          <div style={{ padding: "20px", textAlign: "center", color: "var(--text3)" }}>No history found in database.</div>
-        ) : (
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`msg-row ${selectedMsg?.id === msg.id ? "selected" : ""}`}
-              onClick={() => setSelectedMsg(msg)}
-            >
-              <div className="channel-chip">{CHANNEL_ICONS[msg.channel] || "💬"}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="msg-sender">{msg.sender}</div>
-                <div className="msg-preview">{msg.message_body}</div>
+      <div className="card" style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "20px", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "16px" }}>Scan History</div>
+        <div style={{ overflowY: "auto", flex: 1 }}>
+          {loading ? (
+            <div style={{ padding: "40px", textAlign: "center", color: "var(--text3)" }}>Loading history...</div>
+          ) : messages.length === 0 ? (
+            <div style={{ padding: "40px", textAlign: "center", color: "var(--text3)" }}>No recorded scans found.</div>
+          ) : (
+            messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`msg-row ${selectedMsg?.id === msg.id ? "selected" : ""}`}
+                onClick={() => setSelectedMsg(msg)}
+              >
+                <div className="channel-chip">{CHANNEL_ICONS[msg.channel] || "💬"}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="msg-sender">{msg.sender || "Unknown Sender"}</div>
+                  <div className="msg-preview">{msg.message_body}</div>
+                </div>
+                <div className="msg-meta">
+                  <div className="msg-time">{fmtTime(msg.created_at)}</div>
+                  <VerdictBadge verdict={msg.verdict} />
+                </div>
               </div>
-              <div className="msg-meta">
-                <div className="msg-time">{fmtTime(msg.created_at)}</div>
-                <VerdictBadge verdict={msg.verdict} />
-              </div>
-            </div>
-          ))
-        )}
+            ))
+          )}
+        </div>
       </div>
 
       {/* Detail Panel */}
-      <MessageDetail msg={selectedMsg} onAnalyze={() => {}} />
+      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+        <MessageDetail msg={selectedMsg} onAnalyze={() => {}} />
+      </div>
     </div>
   );
 }

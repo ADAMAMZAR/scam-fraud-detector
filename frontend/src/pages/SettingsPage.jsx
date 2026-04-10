@@ -52,14 +52,14 @@ function Toggle({ on, onToggle }) {
       <span
         style={{
           position: "absolute",
-          top: "3px",
-          left: on ? "23px" : "3px",
-          width: "18px",
-          height: "18px",
+          top: "4px",
+          left: on ? "24px" : "4px",
+          width: "16px",
+          height: "16px",
           borderRadius: "50%",
           background: "#fff",
-          transition: "left 0.2s",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+          transition: "left 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+          boxShadow: "var(--shadow-sm)",
         }}
       />
     </button>
@@ -92,10 +92,10 @@ function Section({ title, icon, children }) {
       </div>
       <div
         style={{
-          border: "0.5px solid var(--border, #e5e7eb)",
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
           borderRadius: "12px",
           overflow: "hidden",
-          background: "var(--bg1, #ffffff)",
         }}
       >
         {children}
@@ -110,24 +110,25 @@ function Row({ icon, label, desc, children, last }) {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: "12px",
-        padding: "13px 16px",
-        borderBottom: last ? "none" : "0.5px solid var(--border, #e5e7eb)",
+        gap: "16px",
+        padding: "16px 20px",
+        borderBottom: last ? "none" : "1px solid var(--border)",
       }}
     >
       {icon && (
         <div
           style={{
-            width: "32px",
-            height: "32px",
-            borderRadius: "8px",
-            background: "var(--bg2, #f9fafb)",
-            border: "0.5px solid var(--border, #e5e7eb)",
+            width: "36px",
+            height: "36px",
+            borderRadius: "10px",
+            background: "var(--bg-hover)",
+            border: "1px solid var(--border)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: "15px",
+            fontSize: "16px",
             flexShrink: 0,
+            color: "var(--primary)",
           }}
         >
           {icon}
@@ -136,10 +137,10 @@ function Row({ icon, label, desc, children, last }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontSize: "13px",
-            fontWeight: "500",
-            color: "var(--text1, #111827)",
-            marginBottom: "1px",
+            fontSize: "14px",
+            fontWeight: "600",
+            color: "var(--text)",
+            marginBottom: "2px",
           }}
         >
           {label}
@@ -147,8 +148,8 @@ function Row({ icon, label, desc, children, last }) {
         {desc && (
           <div
             style={{
-              fontSize: "11px",
-              color: "var(--text3, #9ca3af)",
+              fontSize: "12px",
+              color: "var(--text3)",
               lineHeight: 1.5,
             }}
           >
@@ -167,16 +168,16 @@ function StatCard({ label, value, color }) {
       style={{
         flex: 1,
         textAlign: "center",
-        padding: "12px 8px",
-        borderRadius: "10px",
-        background: "var(--bg2, #f9fafb)",
-        border: "0.5px solid var(--border, #e5e7eb)",
+        padding: "16px 12px",
+        borderRadius: "12px",
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
       }}
     >
       <div
         style={{
-          fontSize: "24px",
-          fontWeight: "700",
+          fontSize: "26px",
+          fontWeight: "800",
           color,
           lineHeight: 1,
         }}
@@ -185,9 +186,12 @@ function StatCard({ label, value, color }) {
       </div>
       <div
         style={{
-          fontSize: "10px",
-          color: "var(--text3, #9ca3af)",
-          marginTop: "4px",
+          fontSize: "11px",
+          fontWeight: "600",
+          color: "var(--text3)",
+          marginTop: "6px",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
         }}
       >
         {label}
@@ -417,7 +421,7 @@ export function SettingsPage({ globalDarkMode, setGlobalDarkMode }) {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ maxWidth: "580px", margin: "0 auto", paddingBottom: "48px" }}>
+    <div style={{ paddingBottom: "48px" }}>
 
       {/* ── Header ── */}
       <div
@@ -430,27 +434,28 @@ export function SettingsPage({ globalDarkMode, setGlobalDarkMode }) {
       >
         <div>
           <h2 style={{ margin: "0 0 3px" }}>Settings</h2>
-          <p style={{ margin: 0, fontSize: "12px", color: "var(--text3, #9ca3af)" }}>
-            Configure your scam detection system
+          <p style={{ margin: 0, fontSize: "12px", color: "var(--text3)" }}>
+            Configure your AI detection parameters
           </p>
         </div>
         <button
           onClick={handleSave}
           disabled={!hasChanges}
           style={{
-            padding: "9px 20px",
-            borderRadius: "9px",
+            padding: "10px 24px",
+            borderRadius: "10px",
             border: "none",
-            background: hasChanges ? "#6366f1" : "var(--bg2, #f3f4f6)",
-            color: hasChanges ? "#fff" : "var(--text3, #9ca3af)",
-            fontSize: "13px",
-            fontWeight: "600",
+            background: hasChanges ? "var(--primary)" : "var(--bg-hover)",
+            color: hasChanges ? "#fff" : "var(--text3)",
+            fontSize: "14px",
+            fontWeight: "700",
             cursor: hasChanges ? "pointer" : "default",
             transition: "all 0.2s",
             whiteSpace: "nowrap",
+            boxShadow: hasChanges ? "var(--shadow)" : "none",
           }}
         >
-          {hasChanges ? "💾 Save Changes" : "✓ Saved"}
+          {hasChanges ? "Save Changes" : "Everything Saved"}
         </button>
       </div>
 
@@ -473,17 +478,11 @@ export function SettingsPage({ globalDarkMode, setGlobalDarkMode }) {
           <button
             onClick={exportCSV}
             disabled={stats.total === 0}
+            className="topbar-btn primary"
             style={{
               padding: "7px 16px",
-              borderRadius: "8px",
-              border: "0.5px solid var(--border, #e5e7eb)",
-              background: stats.total === 0 ? "var(--bg2, #f9fafb)" : "#6366f1",
-              color: stats.total === 0 ? "var(--text3, #9ca3af)" : "#fff",
               fontSize: "12px",
-              fontWeight: "500",
-              cursor: stats.total === 0 ? "not-allowed" : "pointer",
               opacity: stats.total === 0 ? 0.6 : 1,
-              transition: "all 0.2s",
             }}
           >
             Export CSV
@@ -538,9 +537,9 @@ export function SettingsPage({ globalDarkMode, setGlobalDarkMode }) {
             </div>
             <span
               style={{
-                fontSize: "22px",
-                fontWeight: "700",
-                color: "#d97706",
+                fontSize: "24px",
+                fontWeight: "800",
+                color: "var(--amber)",
                 lineHeight: 1,
               }}
             >
@@ -555,7 +554,7 @@ export function SettingsPage({ globalDarkMode, setGlobalDarkMode }) {
             onChange={(e) => set("safeThreshold", parseInt(e.target.value))}
             style={{
               width: "100%",
-              accentColor: "#d97706",
+              accentColor: "var(--amber)",
               cursor: "pointer",
             }}
           />
@@ -608,9 +607,9 @@ export function SettingsPage({ globalDarkMode, setGlobalDarkMode }) {
             </div>
             <span
               style={{
-                fontSize: "22px",
-                fontWeight: "700",
-                color: "#dc2626",
+                fontSize: "24px",
+                fontWeight: "800",
+                color: "var(--red)",
                 lineHeight: 1,
               }}
             >
@@ -625,7 +624,7 @@ export function SettingsPage({ globalDarkMode, setGlobalDarkMode }) {
             onChange={(e) => set("fraudThreshold", parseInt(e.target.value))}
             style={{
               width: "100%",
-              accentColor: "#dc2626",
+              accentColor: "var(--red)",
               cursor: "pointer",
             }}
           />
@@ -671,7 +670,7 @@ export function SettingsPage({ globalDarkMode, setGlobalDarkMode }) {
             <div
               style={{
                 flex: ST,
-                background: "#16a34a",
+                background: "var(--green)",
                 borderRadius: "5px 0 0 5px",
                 transition: "flex 0.2s",
               }}
@@ -679,14 +678,14 @@ export function SettingsPage({ globalDarkMode, setGlobalDarkMode }) {
             <div
               style={{
                 flex: FT - ST,
-                background: "#d97706",
+                background: "var(--amber)",
                 transition: "flex 0.2s",
               }}
             />
             <div
               style={{
                 flex: 100 - FT,
-                background: "#dc2626",
+                background: "var(--red)",
                 borderRadius: "0 5px 5px 0",
                 transition: "flex 0.2s",
               }}
@@ -701,9 +700,9 @@ export function SettingsPage({ globalDarkMode, setGlobalDarkMode }) {
             }}
           >
             {[
-              { label: "Safe",       range: `0–${ST}`,       color: "#16a34a" },
-              { label: "Suspicious", range: `${ST}–${FT}`,   color: "#d97706" },
-              { label: "Fraud",      range: `${FT}–100`,     color: "#dc2626" },
+              { label: "Safe",       range: `0–${ST}`,       color: "var(--green)" },
+              { label: "Suspicious", range: `${ST}–${FT}`,   color: "var(--amber)" },
+              { label: "Fraud",      range: `${FT}–100`,     color: "var(--red)" },
             ].map((z) => (
               <div
                 key={z.label}

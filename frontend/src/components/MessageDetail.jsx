@@ -104,22 +104,16 @@ export function MessageDetail({ msg }) {
         {!aiResult && !loading && (
           <button
             onClick={handleAIAnalysis}
+            className="topbar-btn primary"
             style={{
               width: "100%",
               padding: "12px",
               borderRadius: "10px",
-              background: "var(--accent, #6366f1)",
-              color: "#fff",
-              border: "none",
-              fontWeight: "600",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              fontWeight: "700",
               gap: "8px",
             }}
           >
-            ✨ Analyze with Gemini AI
+            ✨ Deep AI Analysis
           </button>
         )}
 

@@ -413,8 +413,45 @@ async def parse_file(file: UploadFile = File(...)):
                     for i, chunk in enumerate(chunks[:200])]
             return {"type": "pdf", "total": len(rows), "rows": rows}
 
+        # ── XLSX ─────────────────────────────────────────────────────────────
+        elif filename.endswith(".xlsx") or "spreadsheetml" in content_type:
+            try:
+                import openpyxl
+                wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
+                ws = wb.active
+                rows_data = []
+
+                # Read first row as potential header
+                header = []
+                for cell in next(ws.iter_rows(min_row=1, max_row=1, values_only=True)):
+                    header.append(str(cell).lower().strip() if cell else "")
+
+                msg_idx, ch_idx, snd_idx = -1, -1, -1
+                for i, name in enumerate(header):
+                    if name in ("message", "text", "body", "content"): msg_idx = i
+                    if name in ("channel", "type"): ch_idx = i
+                    if name in ("sender", "from"): snd_idx = i
+
+                # Default mapping if header not found
+                has_header = msg_idx != -1
+                if not has_header:
+                    msg_idx, ch_idx, snd_idx = 0, 1, 2
+
+                start_row = 2 if has_header else 1
+                for i, row in enumerate(ws.iter_rows(min_row=start_row, max_row=start_row + 199, values_only=True)):
+                    msg = str(row[msg_idx]).strip() if msg_idx < len(row) and row[msg_idx] is not None else ""
+                    chn = (str(row[ch_idx]).strip().lower() if ch_idx < len(row) and row[ch_idx] is not None else "text")
+                    snd = str(row[snd_idx]).strip() if snd_idx < len(row) and row[snd_idx] is not None else ""
+
+                    if msg:
+                        rows_data.append({"index": i, "message": msg, "channel": chn, "sender": snd})
+
+                return {"type": "xlsx", "total": len(rows_data), "rows": rows_data}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"XLSX Error: {str(e)}")
+
         else:
-            raise HTTPException(status_code=400, detail="Only CSV and PDF files are supported.")
+            raise HTTPException(status_code=400, detail="Only CSV, PDF, and XLSX files are supported.")
 
     except HTTPException:
         raise
