@@ -23,6 +23,26 @@ const EXAMPLES = [
   },
 ];
 
+const DEMO_POOL = {
+  text: [
+    { message: "URGENT: Abnormal activity detected on your account. Please re-verify to avoid permanent suspension: bit.ly/secure-bank-access" },
+    { message: "Congratulations! You've won a RM1,000 Shopee voucher. Claim your lucky prize here: http://shopee-win-claim.com/promo" },
+    { message: "POLICE DEPT: You have an unpaid traffic fine of RM300. Pay within 24 hours to avoid court summons: http://pdrm-web-portal.net/fines" },
+    { message: "RM0.00 BANK ALERT: Your transaction of RM1,500 to 'Lazada Pay' is pending. Not you? Report at: http://secure-alert-bank.xyz" }
+  ],
+  email: [
+    { sender: "admin-support@secure-update.net", message: "Your Microsoft Outlook account will be deactivated in 4 hours due to security breaches. Log in here to resolve: http://office365-verify-access.com" },
+    { sender: "ceo.office@company-corp.com", message: "Hi, I'm stuck in a meeting. Can you quickly buy 5x RM200 Steam gift cards and send me the codes? I'll reimburse you by end of day. Urgent!" },
+    { sender: "noreply@tax-refund-gov.my", message: "You have a pending LHDN tax refund of RM842.50. Please provide your bank credentials to process the transfer: http://refund-lhdn-portal.org/claim" }
+  ],
+  url: [
+    { url: "http://legit-banking-secure.xyz/login" },
+    { url: "http://verify-my-account-now.info" },
+    { url: "http://malaysia-gov-aid.cc/apply" },
+    { url: "http://shopee-rewards-2024.net" }
+  ]
+};
+
 // ── Fully explicit colors — no CSS variables inside result card ──────────────
 const RISK = {
   Safe: {
@@ -561,6 +581,52 @@ export function AnalysePage() {
     handleImageSelect(file);
   }
 
+  async function handleQuickDemo() {
+    setError("");
+    setResult(null);
+
+    if (channel === "image") {
+      try {
+        setLoading(true);
+        // Try popular extensions
+        let demoUrl = "/demo-data/image-test.png";
+        let res = await fetch(demoUrl);
+        if (!res.ok) {
+          demoUrl = "/demo-data/image-test.jpg";
+          res = await fetch(demoUrl);
+        }
+        if (!res.ok) {
+          demoUrl = "/demo-data/image-test.jpeg";
+          res = await fetch(demoUrl);
+        }
+        
+        if (!res.ok) throw new Error("Demo image not found in /public/demo-data/. Please add 'image-test.png' or '.jpg'");
+        
+        const blob = await res.blob();
+        const file = new File([blob], demoUrl.split('/').pop(), { type: blob.type });
+        handleImageSelect(file);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    const pool = DEMO_POOL[channel] || [];
+    if (pool.length === 0) return;
+
+    const random = pool[Math.floor(Math.random() * pool.length)];
+    if (channel === "text") {
+      setMessage(random.message);
+    } else if (channel === "email") {
+      setSenderEmail(random.sender);
+      setMessage(random.message);
+    } else if (channel === "url") {
+      setUrl(random.url);
+    }
+  }
+
   const canAnalyse =
     (channel === "url" && url.trim()) ||
     (channel === "email" && senderEmail.trim() && message.trim()) ||
@@ -586,7 +652,7 @@ export function AnalysePage() {
         >
           TRY AN EXAMPLE
         </div>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
           {EXAMPLES.map((ex) => (
             <button
               key={ex.label}
@@ -609,6 +675,29 @@ export function AnalysePage() {
               {ex.label}
             </button>
           ))}
+
+          <div style={{ width: "1px", height: "18px", background: "var(--border)", margin: "0 4px" }} />
+
+          <button
+            onClick={handleQuickDemo}
+            disabled={loading}
+            style={{
+              fontSize: "12px",
+              padding: "7px 16px",
+              borderRadius: "20px",
+              border: "1.5px solid var(--primary)",
+              background: "var(--primary-dim)",
+              color: "var(--primary)",
+              cursor: "pointer",
+              fontWeight: "700",
+              transition: "all 0.2s",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px"
+            }}
+          >
+            ✨ Quick Demo ({channel.toUpperCase()})
+          </button>
         </div>
       </div>
 
