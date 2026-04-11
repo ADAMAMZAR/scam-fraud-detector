@@ -1,4 +1,4 @@
--- Seed Data for Scam Fraud Detector
+-- Seed Data for ScamSense
 
 -- 1. Insert initial scans
 INSERT INTO scans (id, message_body, channel, sender, score, verdict, confidence, nlp_score, url_score, sender_score)

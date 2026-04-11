@@ -1,4 +1,4 @@
-# 🛡️ Scam Fraud Detector
+# 🛡️ ScamSense
 
 > **AI-Powered Scam & Fraud Detection Assistant** — Nexperts Academy Problem Statement 1
 

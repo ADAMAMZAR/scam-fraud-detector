@@ -8,11 +8,11 @@ export function Sidebar({ activePage, onPageChange }) {
           <div className="logo-icon">
             <img
               src="/logo.png"
-              alt="Fraud Detector"
+              alt="ScamSense"
             />
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <span className="logo-text">Fraud Detector</span>
+            <span className="logo-text">ScamSense</span>
             <span className="logo-sub">Enterprise AI</span>
           </div>
         </div>

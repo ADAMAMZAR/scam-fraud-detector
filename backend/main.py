@@ -19,7 +19,7 @@ from ai_service import AIService
 # Load environment variables
 load_dotenv()
 
-app = FastAPI(title="Scam Fraud Detector API")
+app = FastAPI(title="ScamSense API")
 
 # Enable CORS for the frontend
 app.add_middleware(

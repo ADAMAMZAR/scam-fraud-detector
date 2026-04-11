@@ -1192,7 +1192,7 @@ export function AnalysePage() {
         <div style={{ marginTop: 48, borderTop: "1px solid var(--border)", paddingTop: 48 }}>
           <div style={{ textAlign: "center", marginBottom: 40 }}>
             <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 10 }}>
-              What does Fraud Detector analyse?
+              What does ScamSense analyse?
             </h2>
             <p style={{ color: "var(--text2)", fontSize: 14, maxWidth: 520, margin: "0 auto" }}>
               Built for Malaysian users — paste any suspicious SMS, WhatsApp message, email, or link.
@@ -1252,7 +1252,7 @@ export function AnalysePage() {
 
           <div style={{ textAlign: "center", marginBottom: 32 }}>
             <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 10 }}>
-              Why use Fraud Detector?
+              Why use ScamSense?
             </h2>
           </div>
 
